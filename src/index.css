@@ -123,8 +123,31 @@ html, body {
   gap: 8px;
 }
 
-.brand-ship-icon {
-  filter: drop-shadow(0 0 6px var(--accent-cyan));
+.header-logo-circle {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 1.5px solid var(--accent-cyan);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  padding: 2px;
+  box-shadow: 0 0 10px rgba(0, 240, 255, 0.4);
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+
+.header-logo-circle:hover {
+  transform: scale(1.1);
+}
+
+.header-logo-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: 50%;
 }
 
 .brand-title {
@@ -205,6 +228,28 @@ html, body {
 .credit-name {
   color: #00f0ff;
   font-weight: 600;
+}
+
+.footer-logo-circle {
+  width: 17px;
+  height: 17px;
+  border-radius: 50%;
+  background: #ffffff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  vertical-align: -3px;
+  margin: 0 4px;
+  border: 1px solid var(--accent-cyan);
+  box-shadow: 0 0 6px rgba(0, 240, 255, 0.4);
+}
+
+.footer-logo-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: 50%;
 }
 
 .footer-sep {
@@ -489,9 +534,74 @@ html, body {
   align-items: center;
 }
 
-.hero-emblem {
-  margin-bottom: 8px;
-  filter: drop-shadow(0 0 16px rgba(0, 240, 255, 0.5));
+/* Hero Circular Logo Section */
+.hero-logo-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.hero-logo-orbit {
+  position: absolute;
+  width: 104px;
+  height: 104px;
+  border-radius: 50%;
+  border: 1.5px dashed rgba(0, 240, 255, 0.55);
+  box-shadow: 0 0 22px rgba(0, 240, 255, 0.25), inset 0 0 16px rgba(243, 112, 33, 0.2);
+  animation: orbitRotate 14s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes orbitRotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.hero-logo-circle {
+  width: 86px;
+  height: 86px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 2.5px solid var(--accent-cyan);
+  box-shadow: 0 0 26px rgba(0, 240, 255, 0.5), 0 0 14px rgba(243, 112, 33, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  padding: 6px;
+  position: relative;
+  z-index: 2;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease;
+  cursor: pointer;
+}
+
+.hero-logo-circle:hover {
+  transform: scale(1.08) rotate(3deg);
+  box-shadow: 0 0 38px rgba(0, 240, 255, 0.8), 0 0 22px rgba(243, 112, 33, 0.6);
+}
+
+.hero-logo-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: 50%;
+}
+
+.hero-logo-badge {
+  position: absolute;
+  bottom: -8px;
+  background: linear-gradient(135deg, #0b3c8c 0%, #f37021 100%);
+  color: #ffffff;
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  padding: 2px 9px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+  z-index: 3;
 }
 
 .hero-title {

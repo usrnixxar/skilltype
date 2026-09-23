@@ -23,17 +23,13 @@ export const Header: React.FC<HeaderProps> = ({
     <header className="skilltype-header" role="banner">
       <div className="header-left">
         <div className="brand-logo" aria-label="SkillType Logo">
-          <svg className="brand-ship-icon" viewBox="0 0 32 32" width="24" height="24">
-            <defs>
-              <linearGradient id="headerGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#00f0ff" />
-                <stop offset="100%" stopColor="#3a86ff" />
-              </linearGradient>
-            </defs>
-            <polygon points="16,2 29,28 16,22 3,28" fill="url(#headerGrad)" stroke="#00f0ff" strokeWidth="1.2" />
-            <polygon points="16,7 23,24 16,20 9,24" fill="#070e24" />
-            <circle cx="16" cy="15" r="2.5" fill="#00f0ff" />
-          </svg>
+          <div className="header-logo-circle">
+            <img
+              src="/skillence-logo.jpg"
+              alt="Skillence Academy"
+              className="header-logo-img"
+            />
+          </div>
           <span className="brand-title">SkillType</span>
         </div>
         <span className="brand-tagline">Type Fast. Aim Higher.</span>

@@ -26,20 +26,18 @@ export const MainMenu: React.FC<MainMenuProps> = ({
   return (
     <div className="main-menu-overlay" role="region" aria-label="Main Menu">
       <div className="menu-container">
-        {/* Brand Hero */}
+        {/* Brand Hero with Skillence Academy Logo in a Neon Cyber-Circle */}
         <div className="menu-hero">
-          <div className="hero-emblem">
-            <svg viewBox="0 0 40 40" width="48" height="48" aria-hidden="true">
-              <defs>
-                <linearGradient id="emblemGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#00f0ff" />
-                  <stop offset="100%" stopColor="#3a86ff" />
-                </linearGradient>
-              </defs>
-              <polygon points="20,2 36,36 20,28 4,36" fill="url(#emblemGrad)" stroke="#00f0ff" strokeWidth="1.5" />
-              <polygon points="20,9 29,31 20,25 11,31" fill="#060b1e" />
-              <circle cx="20" cy="18" r="3" fill="#00f0ff" />
-            </svg>
+          <div className="hero-logo-wrapper" aria-label="Skillence Academy Logo">
+            <div className="hero-logo-orbit" />
+            <div className="hero-logo-circle">
+              <img
+                src="/skillence-logo.jpg"
+                alt="Skillence Academy"
+                className="hero-logo-img"
+              />
+            </div>
+            <div className="hero-logo-badge">SKILLENCE</div>
           </div>
           <h1 className="hero-title">SkillType</h1>
           <p className="hero-tagline">Type Fast. Aim Higher.</p>
