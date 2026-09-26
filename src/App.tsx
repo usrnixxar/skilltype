@@ -79,11 +79,32 @@ export const App: React.FC = () => {
     mistypedLetters: {},
   });
 
-  // Apply initial audio settings
+  // Apply initial audio settings & start background music
   useEffect(() => {
     soundEngine.setSfxVolume(settings.sfxVolume);
     soundEngine.setMusicVolume(settings.musicVolume);
     soundEngine.setMuted(settings.isMuted);
+
+    // Attempt starting BGM immediately
+    soundEngine.startMusic();
+
+    // Start BGM on first user interaction if browser autoplay blocked initial play
+    const handleFirstGesture = () => {
+      soundEngine.startMusic();
+      window.removeEventListener('pointerdown', handleFirstGesture);
+      window.removeEventListener('keydown', handleFirstGesture);
+      window.removeEventListener('touchstart', handleFirstGesture);
+    };
+
+    window.addEventListener('pointerdown', handleFirstGesture, { once: true });
+    window.addEventListener('keydown', handleFirstGesture, { once: true });
+    window.addEventListener('touchstart', handleFirstGesture, { once: true });
+
+    return () => {
+      window.removeEventListener('pointerdown', handleFirstGesture);
+      window.removeEventListener('keydown', handleFirstGesture);
+      window.removeEventListener('touchstart', handleFirstGesture);
+    };
   }, []);
 
   // Update settings helper
@@ -207,8 +228,15 @@ export const App: React.FC = () => {
       }
     };
     const handleVisibility = () => {
-      if (document.hidden && engine.getState() === 'playing') {
-        engine.pause();
+      if (document.hidden) {
+        if (engine.getState() === 'playing') {
+          engine.pause();
+        }
+        soundEngine.pauseMusic();
+      } else {
+        if (!settings.isMuted) {
+          soundEngine.resumeMusic();
+        }
       }
     };
 
@@ -343,7 +371,6 @@ export const App: React.FC = () => {
   };
 
   const handleReturnToMenu = () => {
-    soundEngine.stopAmbientDrone();
     setModalOpen('none');
     setAppState('menu');
     if (engineRef.current) {

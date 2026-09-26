@@ -57,7 +57,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           <div className="setting-row setting-toggle-row">
             <div className="setting-info">
               <span className="setting-name">Master Mute</span>
-              <span className="setting-desc">Silence all synthesized lasers, impacts, and ambient drone</span>
+              <span className="setting-desc">Silence all synthesized lasers, impacts, and background music</span>
             </div>
             <button
               className={`toggle-switch ${settings.isMuted ? 'active' : ''}`}
@@ -94,12 +94,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             />
           </div>
 
-          {/* 3. Ambient Space Drone Volume */}
+          {/* 3. Background Music Volume */}
           <div className="setting-row">
             <div className="setting-slider-header">
               <div className="setting-info">
-                <span className="setting-name">Ambient Space Drone</span>
-                <span className="setting-desc">Atmospheric synthesizer background hum</span>
+                <span className="setting-name">Background Music</span>
+                <span className="setting-desc">Typing Flow ambient soundtrack</span>
               </div>
               <span className="setting-value-badge">
                 {Math.round(settings.musicVolume * 100)}%
@@ -114,7 +114,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               onChange={handleMusicChange}
               disabled={settings.isMuted}
               className="settings-slider"
-              aria-label="Ambient Space Drone Volume"
+              aria-label="Background Music Volume"
             />
           </div>
 

@@ -170,7 +170,7 @@ export class GameEngine {
   public startGame(): void {
     this.reset();
     this.startCountdown(3);
-    soundEngine.startAmbientDrone();
+    soundEngine.startMusic();
   }
 
   public reset(): void {

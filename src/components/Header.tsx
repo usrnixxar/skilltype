@@ -53,6 +53,9 @@ export const Header: React.FC<HeaderProps> = ({
           onClick={() => {
             const nextMute = !isMuted;
             soundEngine.setMuted(nextMute);
+            if (!nextMute) {
+              soundEngine.resumeMusic();
+            }
             onToggleMute();
           }}
           aria-label={isMuted ? 'Unmute Audio' : 'Mute Audio'}

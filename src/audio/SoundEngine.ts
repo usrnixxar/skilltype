@@ -8,19 +8,16 @@ class SoundEngine {
   private masterGain: GainNode | null = null;
   private noiseBuffer: AudioBuffer | null = null;
 
-  // Ambient Drone nodes
-  private ambientOsc1: OscillatorNode | null = null;
-  private ambientOsc2: OscillatorNode | null = null;
-  private ambientFilter: BiquadFilterNode | null = null;
-  private ambientGain: GainNode | null = null;
-  private isAmbientPlaying = false;
+  // Background Music (HTML5 Audio)
+  private bgmAudio: HTMLAudioElement | null = null;
+  private isMusicPlaying = false;
 
   private sfxVolume = 0.7;
   private musicVolume = 0.35;
   private isMuted = false;
 
   constructor() {
-    // AudioContext will be initialized on first user gesture
+    // AudioContext and BGM will be initialized on first user gesture
   }
 
   private initContext() {
@@ -74,12 +71,18 @@ class SoundEngine {
     if (this.musicGain && this.ctx) {
       this.musicGain.gain.setTargetAtTime(this.musicVolume, this.ctx.currentTime, 0.05);
     }
+    if (this.bgmAudio) {
+      this.bgmAudio.volume = this.isMuted ? 0 : this.musicVolume;
+    }
   }
 
   public setMuted(muted: boolean) {
     this.isMuted = muted;
     if (this.masterGain && this.ctx) {
       this.masterGain.gain.setTargetAtTime(muted ? 0 : 1, this.ctx.currentTime, 0.05);
+    }
+    if (this.bgmAudio) {
+      this.bgmAudio.volume = muted ? 0 : this.musicVolume;
     }
   }
 
@@ -355,72 +358,81 @@ class SoundEngine {
     });
   }
 
-  // 9. Ambient atmospheric deep space drone
-  public startAmbientDrone() {
-    if (this.isAmbientPlaying) return;
-    this.initContext();
-    if (!this.ctx || !this.musicGain) return;
+  // --- Background Music (Typing Flow) ---
 
+  private initBgm() {
+    if (this.bgmAudio || typeof window === 'undefined') return;
     try {
-      const t = this.ctx.currentTime;
-
-      this.ambientGain = this.ctx.createGain();
-      this.ambientGain.gain.setValueAtTime(0.001, t);
-      this.ambientGain.gain.linearRampToValueAtTime(0.4, t + 2); // Gentle 2s fade-in
-
-      this.ambientFilter = this.ctx.createBiquadFilter();
-      this.ambientFilter.type = 'lowpass';
-      this.ambientFilter.frequency.setValueAtTime(140, t);
-
-      // Dual detuned oscillators for rich celestial resonance
-      this.ambientOsc1 = this.ctx.createOscillator();
-      this.ambientOsc2 = this.ctx.createOscillator();
-
-      this.ambientOsc1.type = 'sawtooth';
-      this.ambientOsc1.frequency.setValueAtTime(55, t); // A1 note
-
-      this.ambientOsc2.type = 'sine';
-      this.ambientOsc2.frequency.setValueAtTime(55.5, t); // Slightly detuned
-
-      this.ambientOsc1.connect(this.ambientFilter);
-      this.ambientOsc2.connect(this.ambientFilter);
-      this.ambientFilter.connect(this.ambientGain);
-      this.ambientGain.connect(this.musicGain);
-
-      this.ambientOsc1.start(t);
-      this.ambientOsc2.start(t);
-
-      this.isAmbientPlaying = true;
+      this.bgmAudio = new Audio('/Typing_Flow_60s.mp3');
+      this.bgmAudio.loop = true;
+      this.bgmAudio.preload = 'auto';
+      this.bgmAudio.volume = this.isMuted ? 0 : this.musicVolume;
     } catch {
-      // AudioContext error
+      // Audio element not supported
     }
   }
 
-  public stopAmbientDrone() {
-    if (!this.isAmbientPlaying || !this.ctx || !this.ambientGain) return;
+  public startMusic() {
+    this.initContext();
+    this.initBgm();
+    if (!this.bgmAudio) return;
 
-    try {
-      const t = this.ctx.currentTime;
-      this.ambientGain.gain.setTargetAtTime(0.0001, t, 0.4);
-
-      setTimeout(() => {
-        try {
-          this.ambientOsc1?.stop();
-          this.ambientOsc2?.stop();
-          this.ambientOsc1?.disconnect();
-          this.ambientOsc2?.disconnect();
-          this.ambientFilter?.disconnect();
-          this.ambientGain?.disconnect();
-        } catch {}
-        this.ambientOsc1 = null;
-        this.ambientOsc2 = null;
-        this.ambientFilter = null;
-        this.ambientGain = null;
-        this.isAmbientPlaying = false;
-      }, 500);
-    } catch {
-      this.isAmbientPlaying = false;
+    this.bgmAudio.volume = this.isMuted ? 0 : this.musicVolume;
+    const playPromise = this.bgmAudio.play();
+    if (playPromise !== undefined) {
+      playPromise
+        .then(() => {
+          this.isMusicPlaying = true;
+        })
+        .catch(() => {
+          // Autoplay blocked by browser until user gesture
+          this.isMusicPlaying = false;
+        });
     }
+  }
+
+  public pauseMusic() {
+    if (this.bgmAudio && !this.bgmAudio.paused) {
+      this.bgmAudio.pause();
+      this.isMusicPlaying = false;
+    }
+  }
+
+  public resumeMusic() {
+    if (this.bgmAudio && this.bgmAudio.paused) {
+      this.bgmAudio.volume = this.isMuted ? 0 : this.musicVolume;
+      const playPromise = this.bgmAudio.play();
+      if (playPromise !== undefined) {
+        playPromise
+          .then(() => {
+            this.isMusicPlaying = true;
+          })
+          .catch(() => {});
+      }
+    } else if (!this.bgmAudio) {
+      this.startMusic();
+    }
+  }
+
+  public stopMusic() {
+    if (this.bgmAudio) {
+      this.bgmAudio.pause();
+      this.bgmAudio.currentTime = 0;
+      this.isMusicPlaying = false;
+    }
+  }
+
+  public isBgmPlaying(): boolean {
+    return this.isMusicPlaying && !!this.bgmAudio && !this.bgmAudio.paused;
+  }
+
+  // Backwards-compatibility aliases for former ambient drone calls
+  public startAmbientDrone() {
+    this.startMusic();
+  }
+
+  public stopAmbientDrone() {
+    this.stopMusic();
   }
 }
 
