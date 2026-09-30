@@ -76,6 +76,7 @@ export interface Shockwave {
 export interface GameStats {
   score: number;
   wave: number;
+  targetWpm?: number;
   lives: number;
   maxLives: number;
   pulsesRemaining: number;
@@ -105,6 +106,7 @@ export interface WaveConfig {
   waveNumber: number;
   totalEnemies: number;
   spawnIntervalMs: number;
+  targetWpm?: number;
   speedMultiplier: number;
   scoutCount: number;
   fighterCount: number;

@@ -1,5 +1,6 @@
 import React from 'react';
 import { GameStats } from '../game/types';
+import { getTargetWPM } from '../game/WaveManager';
 import { GameMode } from '../utils/storage';
 import { PlayerProfile } from '../utils/playerProfile';
 import { User, Flame, Clock, UserCheck } from 'lucide-react';
@@ -36,6 +37,8 @@ export const LiveStatsPanel: React.FC<LiveStatsPanelProps> = ({
     activeMinutes > 0.05 && stats.correctKeystrokes > 0
       ? `${Math.round((stats.correctKeystrokes / 5) / activeMinutes)}`
       : '—';
+
+  const targetWpm = stats.targetWpm ?? getTargetWPM(stats.wave);
 
   // Practice timer formatting
   const formatTimer = (ms: number) => {
@@ -119,6 +122,7 @@ export const LiveStatsPanel: React.FC<LiveStatsPanelProps> = ({
               ? 'Relaxed'
               : `WAVE ${stats.wave}`}
           </div>
+          <div className="stat-card-subtext">Target: {targetWpm} WPM</div>
         </div>
 
         {/* COMBO */}
@@ -160,7 +164,7 @@ export const LiveStatsPanel: React.FC<LiveStatsPanelProps> = ({
           <div className="stat-card-value stat-mono-value stat-wpm-value">
             {wpmStr}
           </div>
-          <div className="stat-card-subtext">Net Words Per Minute</div>
+          <div className="stat-card-subtext">Target: {targetWpm} WPM</div>
         </div>
 
         {/* Practice Timer Countdown if applicable */}

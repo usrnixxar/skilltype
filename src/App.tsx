@@ -65,6 +65,7 @@ export const App: React.FC = () => {
   const [stats, setStats] = useState<GameStats>({
     score: 0,
     wave: 1,
+    targetWpm: 30,
     lives: 3,
     maxLives: 3,
     pulsesRemaining: 3,

@@ -10,7 +10,7 @@ import {
 } from './types';
 import { TargetingSystem } from './TargetingSystem';
 import { EnemyManager } from './EnemyManager';
-import { WaveManager } from './WaveManager';
+import { WaveManager, getTargetWPM } from './WaveManager';
 import { ParticleSystem } from './ParticleSystem';
 import { Starfield } from './Starfield';
 import { soundEngine } from '../audio/SoundEngine';
@@ -108,6 +108,7 @@ export class GameEngine {
     return {
       score: 0,
       wave: 1,
+      targetWpm: getTargetWPM(1),
       lives: 3,
       maxLives: 3,
       pulsesRemaining: 3,
@@ -559,6 +560,7 @@ export class GameEngine {
       const shouldStartNextWave = this.waveManager.updateTransition(dtMs);
       if (shouldStartNextWave) {
         this.stats.wave = this.waveManager.getCurrentWave();
+        this.stats.targetWpm = getTargetWPM(this.stats.wave);
         this.waveManager.startWave(this.config.difficulty);
         this.setState('playing');
         this.callbacks.onStatsUpdate({ ...this.stats });

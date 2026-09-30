@@ -3,11 +3,22 @@
 import { EnemyType, WaveConfig } from './types';
 import { Difficulty } from '../utils/storage';
 
+export function getTargetWPM(level: number): number {
+  const wpmByLevel = [
+    30, 33, 36, 39, 42,
+    45, 48, 51, 54, 57,
+    60, 63, 65, 68, 70
+  ];
+
+  const safeLevel = Math.min(Math.max(level, 1), 15);
+  return wpmByLevel[safeLevel - 1];
+}
+
 export class WaveManager {
   private currentWave = 1;
   private spawnQueue: EnemyType[] = [];
   private timeUntilNextSpawnMs = 0;
-  private spawnIntervalMs = 2000;
+  private spawnIntervalMs = Math.round(60000 / getTargetWPM(1));
   private isWaveInProgress = false;
   private isBetweenWaves = false;
   private waveTransitionTimeRemainingMs = 0;
@@ -24,12 +35,21 @@ export class WaveManager {
     return Math.max(0, Math.ceil(this.waveTransitionTimeRemainingMs / 1000));
   }
 
+  public getSpawnIntervalMs(): number {
+    return this.spawnIntervalMs;
+  }
+
+  public getTargetWPM(wave: number = this.currentWave): number {
+    return getTargetWPM(wave);
+  }
+
   public reset(startingWave = 1): void {
     this.currentWave = startingWave;
     this.isWaveInProgress = false;
     this.isBetweenWaves = false;
     this.waveTransitionTimeRemainingMs = 0;
     this.spawnQueue = [];
+    this.spawnIntervalMs = Math.round(60000 / getTargetWPM(startingWave));
   }
 
   /**
@@ -43,9 +63,9 @@ export class WaveManager {
     // Enemy count scales with wave
     const totalEnemies = Math.min(30, Math.floor((4 + wave * 2) * diffMult));
 
-    // Spawn interval decreases (faster spawns) as waves progress
-    const baseInterval = Math.max(1100, 2400 - wave * 110);
-    const spawnIntervalMs = Math.floor(baseInterval / diffMult);
+    // Spawn interval dynamically calculated from level target WPM (30 WPM at L1 to 70 WPM at L15)
+    const targetWpm = getTargetWPM(wave);
+    const spawnIntervalMs = Math.round(60000 / targetWpm);
 
     // Enemy type distribution
     let scoutCount = totalEnemies;
@@ -67,6 +87,7 @@ export class WaveManager {
       waveNumber: wave,
       totalEnemies,
       spawnIntervalMs,
+      targetWpm,
       speedMultiplier: 1.0 + (wave - 1) * 0.04,
       scoutCount,
       fighterCount,
@@ -134,6 +155,9 @@ export class WaveManager {
       this.isWaveInProgress = false;
       this.isBetweenWaves = true;
       this.waveTransitionTimeRemainingMs = 2400; // 2.4s victory transition
+      // Immediately update spawn interval for the next level upon wave clear
+      const nextWave = this.currentWave + 1;
+      this.spawnIntervalMs = Math.round(60000 / getTargetWPM(nextWave));
       return true;
     }
     return false;

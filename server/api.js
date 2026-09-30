@@ -2,11 +2,14 @@ import { upsertPlayer, recordCompletedRun, getWeeklyLeaderboard } from './db.js'
 
 function readJsonBody(req) {
   return new Promise((resolve, reject) => {
+    if (req.body && typeof req.body === 'object') {
+      resolve(req.body);
+      return;
+    }
     let body = '';
     req.on('data', (chunk) => {
       body += chunk;
       if (body.length > 500000) {
-        // 500KB cap
         req.destroy();
         reject(new Error('Payload too large'));
       }
@@ -18,7 +21,7 @@ function readJsonBody(req) {
       }
       try {
         resolve(JSON.parse(body));
-      } catch (err) {
+      } catch {
         reject(new Error('Malformed JSON payload'));
       }
     });
@@ -33,7 +36,7 @@ function sendJson(res, statusCode, data) {
     'Content-Length': Buffer.byteLength(json),
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization, Accept',
   });
   res.end(json);
 }
@@ -44,7 +47,7 @@ export async function handleApiRequest(req, res) {
     res.writeHead(204, {
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization, Accept',
     });
     res.end();
     return true;
@@ -65,7 +68,6 @@ export async function handleApiRequest(req, res) {
       sendJson(res, 200, {
         status: 'ok',
         service: 'SkillType Leaderboard Service',
-        serverTime: Date.now(),
       });
       return true;
     }
@@ -73,7 +75,7 @@ export async function handleApiRequest(req, res) {
     // 2. Weekly Leaderboard
     if (pathname === '/api/leaderboard' && req.method === 'GET') {
       const playerId = parsedUrl.searchParams.get('playerId');
-      const data = getWeeklyLeaderboard(playerId);
+      const data = await getWeeklyLeaderboard(playerId);
       sendJson(res, 200, data);
       return true;
     }
@@ -81,7 +83,7 @@ export async function handleApiRequest(req, res) {
     // 3. Register / Update Player
     if (pathname === '/api/players' && req.method === 'POST') {
       const body = await readJsonBody(req);
-      const player = upsertPlayer(body.id, body.name);
+      const player = await upsertPlayer(body.id, body.name);
       sendJson(res, 200, { success: true, player });
       return true;
     }
@@ -89,7 +91,7 @@ export async function handleApiRequest(req, res) {
     // 4. Submit Completed Run
     if (pathname === '/api/runs' && req.method === 'POST') {
       const body = await readJsonBody(req);
-      const result = recordCompletedRun(body);
+      const result = await recordCompletedRun(body);
       sendJson(res, 200, result);
       return true;
     }
