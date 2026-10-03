@@ -5,6 +5,7 @@ import {
   createPlayerProfile,
   loadAllLocalPlayers,
   saveActivePlayer,
+  getOrCreatePlayerId,
 } from '../utils/playerProfile';
 import { registerPlayerWithServer } from '../utils/leaderboardApi';
 import { User, Play, Users, X, Check } from 'lucide-react';
@@ -50,22 +51,16 @@ export const WelcomeModal: React.FC<WelcomeModalProps> = ({
     const validation = validatePlayerName(name);
 
     if (!validation.valid) {
-      setError(validation.error || 'Please enter a valid name (2–24 characters).');
+      setError(validation.error || 'Please enter your name (2–25 characters).');
       return;
     }
 
-    // If the activePlayer has the exact same name and user is just continuing:
-    if (activePlayer && activePlayer.name === validation.trimmedName) {
-      registerPlayerWithServer(activePlayer.id, activePlayer.name);
-      onSavePlayerAndStart(activePlayer);
-      return;
-    }
+    // Reuse existing player_id so the same player's scores always accumulate
+    const playerId = activePlayer?.id || getOrCreatePlayerId();
+    const profile = createPlayerProfile(validation.trimmedName, playerId);
 
-    // Otherwise, create a NEW unique guest profile for this player
-    // Identical names on the same computer will NOT merge because each gets a unique ID!
-    const newProfile = createPlayerProfile(validation.trimmedName);
-    registerPlayerWithServer(newProfile.id, newProfile.name);
-    onSavePlayerAndStart(newProfile);
+    registerPlayerWithServer(profile.id, profile.name);
+    onSavePlayerAndStart(profile);
   };
 
   const handleSelectExistingProfile = (profile: PlayerProfile) => {
@@ -97,10 +92,10 @@ export const WelcomeModal: React.FC<WelcomeModalProps> = ({
           </div>
 
           <h2 className="welcome-title" id="welcome-title">
-            Welcome to SkillType
+            Enter Player Name
           </h2>
           <p className="welcome-subtitle">
-            Enter your name and challenge the weekly leaderboard.
+            Enter your name to compete on the weekly and daily leaderboards.
           </p>
         </div>
 
@@ -108,10 +103,10 @@ export const WelcomeModal: React.FC<WelcomeModalProps> = ({
           <div className="form-group">
             <div className="form-label-row">
               <label htmlFor="player-name-input" className="form-label">
-                <User size={14} className="label-icon" /> Your name
+                <User size={14} className="label-icon" /> Your Name
               </label>
               <span className="char-counter">
-                {name.length}/24
+                {name.length}/25
               </span>
             </div>
 
@@ -125,8 +120,8 @@ export const WelcomeModal: React.FC<WelcomeModalProps> = ({
                   setName(e.target.value);
                   if (error) setError(null);
                 }}
-                maxLength={24}
-                placeholder="e.g. Maverick, Alex Chen"
+                maxLength={25}
+                placeholder="e.g. Nisar, Rehan, Rahul Kumar"
                 autoFocus
                 autoComplete="off"
                 spellCheck="false"
@@ -136,7 +131,7 @@ export const WelcomeModal: React.FC<WelcomeModalProps> = ({
             {error && <div className="form-error-msg">{error}</div>}
 
             <p className="form-hint">
-              Guest profile • No password needed • 2–24 characters (spaces allowed)
+              Name is mandatory • 2–25 characters (spaces allowed) • Stored for convenience
             </p>
           </div>
 
@@ -156,14 +151,14 @@ export const WelcomeModal: React.FC<WelcomeModalProps> = ({
             >
               <Users size={14} />
               <span>
-                {showSwitchList ? 'Hide profiles' : `Switch saved player on this computer (${localProfiles.length})`}
+                {showSwitchList ? 'Hide profiles' : `Switch saved player on this device (${localProfiles.length})`}
               </span>
             </button>
 
             {showSwitchList && (
               <div className="shared-profiles-list">
                 <div className="shared-profiles-header">
-                  <span>Select student profile:</span>
+                  <span>Select player profile:</span>
                 </div>
                 <div className="shared-profiles-items">
                   {localProfiles.map((p) => {
@@ -180,7 +175,7 @@ export const WelcomeModal: React.FC<WelcomeModalProps> = ({
                         <div className="shared-profile-info">
                           <span className="shared-profile-name">{p.name}</span>
                           <span className="shared-profile-meta">
-                            ID: {p.id.substring(0, 10)}...
+                            ID: {p.id.substring(0, 12)}...
                           </span>
                         </div>
                         {isCurrent ? (
@@ -202,3 +197,5 @@ export const WelcomeModal: React.FC<WelcomeModalProps> = ({
     </div>
   );
 };
+
+export default WelcomeModal;

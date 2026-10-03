@@ -25,7 +25,8 @@ export class EnemyManager {
     categoryData: CategoryData,
     difficulty: Difficulty,
     playfieldWidth: number,
-    _playfieldHeight: number
+    _playfieldHeight: number,
+    waveSpeedMultiplier: number = 1.0
   ): Enemy | null {
     // 1. Determine candidate words by type
     let wordPool = categoryData.short;
@@ -54,10 +55,10 @@ export class EnemyManager {
     const chosenWordList = uniqueFirstLetterWords.length > 0 ? uniqueFirstLetterWords : candidateList;
     const selectedWord = chosenWordList[Math.floor(Math.random() * chosenWordList.length)];
 
-    // 3. Compute speed based on difficulty & type
-    let speedMult = 1.0;
-    if (difficulty === 'beginner') speedMult = 0.72;
-    if (difficulty === 'expert') speedMult = 1.35;
+    // 3. Compute speed based on difficulty, wave speed multiplier & type
+    let speedMult = Math.max(0.5, waveSpeedMultiplier);
+    if (difficulty === 'beginner') speedMult *= 0.72;
+    if (difficulty === 'expert') speedMult *= 1.35;
 
     let baseVy = 38; // px per second
     let color = '#00f0ff'; // Cyan for Scout

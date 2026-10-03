@@ -84,8 +84,8 @@ export const LiveStatsPanel: React.FC<LiveStatsPanelProps> = ({
         </div>
         <div className="player-meta-block">
           <div className="player-meta-label">PILOT</div>
-          <div className="player-meta-name" title={activePlayer?.name || 'Guest Pilot'}>
-            {activePlayer?.name || 'Guest Pilot'}
+          <div className="player-meta-name" title={activePlayer?.name || 'Pilot'}>
+            {activePlayer?.name || 'Pilot'}
           </div>
         </div>
         <button

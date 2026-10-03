@@ -571,12 +571,17 @@ export class GameEngine {
     // 10. Spawn Queued Enemies
     const nextEnemyType = this.waveManager.tickSpawn(dtMs);
     if (nextEnemyType) {
+      const waveConfig = this.waveManager.generateWaveConfig(
+        this.stats.wave,
+        this.config.difficulty
+      );
       this.enemyManager.spawnEnemy(
         nextEnemyType,
         this.activeCategoryData,
         this.config.difficulty,
         this.width,
-        this.height
+        this.height,
+        waveConfig.speedMultiplier
       );
     }
 

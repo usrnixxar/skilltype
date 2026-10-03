@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import {
   validatePlayerName,
   generatePlayerId,
+  generateUuid,
   createPlayerProfile,
   loadActivePlayer,
   loadAllLocalPlayers,
@@ -32,9 +33,10 @@ describe('Player Profile Management', () => {
   });
 
   it('validates player names correctly', () => {
-    // 2 to 24 chars, supports spaces
+    // 2 to 25 chars, supports spaces
     expect(validatePlayerName('Maverick').valid).toBe(true);
     expect(validatePlayerName('Alex Chen').valid).toBe(true);
+    expect(validatePlayerName('Rahul Kumar').valid).toBe(true);
     expect(validatePlayerName('  Sarah Connor  ').trimmedName).toBe('Sarah Connor');
     expect(validatePlayerName('  Sarah Connor  ').valid).toBe(true);
     expect(validatePlayerName('Ab').valid).toBe(true); // exactly 2 chars
@@ -44,22 +46,25 @@ describe('Player Profile Management', () => {
     expect(validatePlayerName(' ').valid).toBe(false);
     expect(validatePlayerName('A').valid).toBe(false);
 
-    // Invalid: over 24 characters
-    const longName = 'ThisNameIsWayTooLongToBeValid123';
+    // Invalid: over 25 characters
+    const longName = 'ThisNameIsWayTooLongToBeValid123456';
     expect(validatePlayerName(longName).valid).toBe(false);
   });
 
-  it('generates unique player IDs starting with usr_', () => {
+  it('generates standard UUID format for player IDs', () => {
     const id1 = generatePlayerId();
     const id2 = generatePlayerId();
-    expect(id1.startsWith('usr_')).toBe(true);
-    expect(id2.startsWith('usr_')).toBe(true);
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    expect(uuidRegex.test(id1)).toBe(true);
+    expect(uuidRegex.test(id2)).toBe(true);
     expect(id1).not.toBe(id2);
   });
 
-  it('distinct profiles with identical display names have separate IDs and never merge', () => {
-    const p1 = createPlayerProfile('Alex');
-    const p2 = createPlayerProfile('Alex');
+  it('distinct profiles with explicit IDs never merge on shared computers', () => {
+    const id1 = generateUuid();
+    const id2 = generateUuid();
+    const p1 = createPlayerProfile('Alex', id1);
+    const p2 = createPlayerProfile('Alex', id2);
 
     expect(p1.name).toBe('Alex');
     expect(p2.name).toBe('Alex');
@@ -79,60 +84,65 @@ describe('Player Profile Management', () => {
     expect(loadActivePlayer()?.id).toBe(profile.id);
 
     // Switching active player
-    const profile2 = createPlayerProfile('Wingman');
+    const profile2 = createPlayerProfile('Wingman', generateUuid());
     expect(loadActivePlayer()?.name).toBe('Wingman');
     expect(loadActivePlayer()?.id).toBe(profile2.id);
   });
 });
 
 describe('Weekly Leaderboard Ranking & Tie-Breaking Rules', () => {
-  it('ranks higher WPM first regardless of score', () => {
-    const run1 = { wpm: 75, score: 9000, accuracy: 98, completedAt: 1000 };
-    const run2 = { wpm: 80, score: 4000, accuracy: 90, completedAt: 2000 };
+  it('ranks higher points first (Highest Weekly Points = Rank #1)', () => {
+    const player1 = { weeklyPoints: 5400, bestWpm: 49, bestAccuracy: 95, lastPlayedAt: 1000 };
+    const player2 = { weeklyPoints: 5800, bestWpm: 52, bestAccuracy: 98, lastPlayedAt: 2000 };
 
-    const sorted = [run1, run2].sort(compareLeaderboardRuns);
-    expect(sorted[0].wpm).toBe(80);
-    expect(sorted[1].wpm).toBe(75);
+    const sorted = [player1, player2].sort(compareLeaderboardRuns);
+    expect(sorted[0].weeklyPoints).toBe(5800);
+    expect(sorted[1].weeklyPoints).toBe(5400);
   });
 
-  it('breaks WPM ties using higher Score first', () => {
-    const run1 = { wpm: 80, score: 5000, accuracy: 95, completedAt: 1000 };
-    const run2 = { wpm: 80, score: 6200, accuracy: 90, completedAt: 2000 };
+  it('breaks Points ties using higher Best WPM first', () => {
+    const player1 = { weeklyPoints: 5000, bestWpm: 45, bestAccuracy: 95, lastPlayedAt: 1000 };
+    const player2 = { weeklyPoints: 5000, bestWpm: 55, bestAccuracy: 90, lastPlayedAt: 2000 };
 
-    const sorted = [run1, run2].sort(compareLeaderboardRuns);
-    expect(sorted[0].score).toBe(6200);
-    expect(sorted[1].score).toBe(5000);
+    const sorted = [player1, player2].sort(compareLeaderboardRuns);
+    expect(sorted[0].bestWpm).toBe(55);
+    expect(sorted[1].bestWpm).toBe(45);
   });
 
-  it('breaks WPM and Score ties using higher Accuracy first', () => {
-    const run1 = { wpm: 80, score: 5000, accuracy: 95, completedAt: 1000 };
-    const run2 = { wpm: 80, score: 5000, accuracy: 99, completedAt: 2000 };
+  it('breaks Points and WPM ties using higher Accuracy first', () => {
+    const player1 = { weeklyPoints: 5000, bestWpm: 50, bestAccuracy: 92, lastPlayedAt: 1000 };
+    const player2 = { weeklyPoints: 5000, bestWpm: 50, bestAccuracy: 98, lastPlayedAt: 2000 };
 
-    const sorted = [run1, run2].sort(compareLeaderboardRuns);
-    expect(sorted[0].accuracy).toBe(99);
-    expect(sorted[1].accuracy).toBe(95);
+    const sorted = [player1, player2].sort(compareLeaderboardRuns);
+    expect(sorted[0].bestAccuracy).toBe(98);
+    expect(sorted[1].bestAccuracy).toBe(92);
   });
 
-  it('breaks complete ties using earlier completedAt timestamp', () => {
-    const runEarlier = { wpm: 80, score: 5000, accuracy: 98, completedAt: 1000 };
-    const runLater = { wpm: 80, score: 5000, accuracy: 98, completedAt: 2000 };
+  it('breaks complete ties using earlier timestamp', () => {
+    const playerEarlier = { weeklyPoints: 5000, bestWpm: 50, bestAccuracy: 98, lastPlayedAt: 1000 };
+    const playerLater = { weeklyPoints: 5000, bestWpm: 50, bestAccuracy: 98, lastPlayedAt: 2000 };
 
-    const sorted = [runLater, runEarlier].sort(compareLeaderboardRuns);
-    expect(sorted[0].completedAt).toBe(1000);
-    expect(sorted[1].completedAt).toBe(2000);
+    const sorted = [playerLater, playerEarlier].sort(compareLeaderboardRuns);
+    expect(sorted[0].lastPlayedAt).toBe(1000);
+    expect(sorted[1].lastPlayedAt).toBe(2000);
   });
 
   it('properly sorts a complex multi-player leaderboard according to all 4 rules', () => {
     const players = [
-      { name: 'A', wpm: 60, score: 2000, accuracy: 90, completedAt: 100 },
-      { name: 'B', wpm: 90, score: 4000, accuracy: 95, completedAt: 100 },
-      { name: 'C', wpm: 90, score: 5000, accuracy: 92, completedAt: 100 },
-      { name: 'D', wpm: 90, score: 5000, accuracy: 98, completedAt: 200 },
-      { name: 'E', wpm: 90, score: 5000, accuracy: 98, completedAt: 150 }, // Beats D on timestamp
-      { name: 'F', wpm: 105, score: 7000, accuracy: 99, completedAt: 500 }, // Overall #1
+      { name: 'Nisar', weeklyPoints: 5800, bestWpm: 52, bestAccuracy: 98, lastPlayedAt: 100 },
+      { name: 'Rehan', weeklyPoints: 5400, bestWpm: 49, bestAccuracy: 95, lastPlayedAt: 100 },
+      { name: 'Aman', weeklyPoints: 4200, bestWpm: 47, bestAccuracy: 96, lastPlayedAt: 100 },
+      { name: 'Rahul', weeklyPoints: 3900, bestWpm: 43, bestAccuracy: 92, lastPlayedAt: 100 },
+      { name: 'TiedHigherWpm', weeklyPoints: 3900, bestWpm: 48, bestAccuracy: 90, lastPlayedAt: 100 },
     ];
 
     const sorted = [...players].sort(compareLeaderboardRuns);
-    expect(sorted.map(p => p.name)).toEqual(['F', 'E', 'D', 'C', 'B', 'A']);
+    expect(sorted.map((p) => p.name)).toEqual([
+      'Nisar',
+      'Rehan',
+      'Aman',
+      'TiedHigherWpm', // 3900 pts, 48 WPM beats Rahul with 43 WPM
+      'Rahul',
+    ]);
   });
 });

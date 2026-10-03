@@ -1,4 +1,4 @@
-import { upsertPlayer, recordCompletedRun, getWeeklyLeaderboard } from './db.js';
+import { upsertPlayer, recordCompletedRun, getWeeklyLeaderboard, getDailyLeaderboard } from './db.js';
 
 function readJsonBody(req) {
   return new Promise((resolve, reject) => {
@@ -72,10 +72,19 @@ export async function handleApiRequest(req, res) {
       return true;
     }
 
-    // 2. Weekly Leaderboard
+    // 2. Leaderboard (Weekly or Daily)
     if (pathname === '/api/leaderboard' && req.method === 'GET') {
       const playerId = parsedUrl.searchParams.get('playerId');
-      const data = await getWeeklyLeaderboard(playerId);
+      const type = parsedUrl.searchParams.get('type') || 'weekly';
+      const weekId = parsedUrl.searchParams.get('weekId');
+      const dayId = parsedUrl.searchParams.get('dayId');
+
+      let data;
+      if (type === 'daily') {
+        data = await getDailyLeaderboard(playerId, dayId);
+      } else {
+        data = await getWeeklyLeaderboard(playerId, weekId);
+      }
       sendJson(res, 200, data);
       return true;
     }

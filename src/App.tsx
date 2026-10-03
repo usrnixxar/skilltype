@@ -13,8 +13,10 @@ import {
   PlayerProfile,
   loadActivePlayer,
   saveActivePlayer,
+  generateUuid,
 } from './utils/playerProfile';
 import { submitGameRun } from './utils/leaderboardApi';
+import { getTargetWPM } from './game/WaveManager';
 import { WordCategory } from './data/wordLists';
 import soundEngine from './audio/SoundEngine';
 
@@ -39,6 +41,7 @@ export const App: React.FC = () => {
   const engineRef = useRef<GameEngine | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const submittedRunIds = useRef<Set<string>>(new Set());
+  const activeSessionIdRef = useRef<string>(generateUuid());
 
   // Player Profile State (Guest profile remembered in localStorage)
   const [activePlayer, setActivePlayer] = useState<PlayerProfile | null>(loadActivePlayer);
@@ -65,7 +68,7 @@ export const App: React.FC = () => {
   const [stats, setStats] = useState<GameStats>({
     score: 0,
     wave: 1,
-    targetWpm: 30,
+    targetWpm: getTargetWPM(1),
     lives: 3,
     maxLives: 3,
     pulsesRemaining: 3,
@@ -178,16 +181,17 @@ export const App: React.FC = () => {
 
         // Automatically submit run to shared persistent weekly leaderboard
         const currentPlayer = activePlayer || loadActivePlayer();
-        if (currentPlayer && (finalStats.score > 0 || finalStats.wordsCompleted > 0)) {
-          const runId = `run_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+        const sessionId = activeSessionIdRef.current || generateUuid();
 
-          if (!submittedRunIds.current.has(runId)) {
-            submittedRunIds.current.add(runId);
+        if (currentPlayer && (finalStats.score > 0 || finalStats.wordsCompleted > 0)) {
+          if (!submittedRunIds.current.has(sessionId)) {
+            submittedRunIds.current.add(sessionId);
             setIsSavingRun(true);
 
             try {
               await submitGameRun({
-                runId,
+                gameSessionId: sessionId,
+                runId: sessionId,
                 playerId: currentPlayer.id,
                 playerName: currentPlayer.name,
                 wpm: finalWpm,
@@ -197,7 +201,7 @@ export const App: React.FC = () => {
                 wordsCompleted: finalStats.wordsCompleted,
                 durationSeconds: Math.floor(finalStats.activePlayTimeMs / 1000),
               });
-              setLastSavedRunId(runId);
+              setLastSavedRunId(sessionId);
             } catch (err) {
               console.error('Failed to submit run to shared leaderboard:', err);
             } finally {
@@ -299,6 +303,7 @@ export const App: React.FC = () => {
       return;
     }
 
+    activeSessionIdRef.current = generateUuid();
     setCurrentMode('arcade');
     setAppState('gameplay');
     setModalOpen('none');
@@ -328,6 +333,7 @@ export const App: React.FC = () => {
       return;
     }
 
+    activeSessionIdRef.current = generateUuid();
     setCurrentMode('practice');
     setAppState('gameplay');
     setModalOpen('none');
@@ -365,6 +371,7 @@ export const App: React.FC = () => {
   };
 
   const handleRestart = () => {
+    activeSessionIdRef.current = generateUuid();
     setModalOpen('none');
     if (engineRef.current) {
       engineRef.current.startGame();

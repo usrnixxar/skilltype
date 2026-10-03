@@ -5,7 +5,9 @@ import {
   upsertPlayer,
   recordCompletedRun,
   getWeeklyLeaderboard,
+  getDailyLeaderboard,
   resetInMemoryDatabase,
+  compareLeaderboardEntries,
   compareRuns,
 } from '../../api/lib/db.js';
 import healthHandler from '../../api/health.js';
@@ -63,7 +65,7 @@ describe('SkillType Leaderboard Backend and Persistence', () => {
       expect(sanitizePlayerName('   Commander Shephard   ')).toBe('Commander Shephard');
     });
 
-    it('rejects names with less than 2 characters or greater than 24 characters', async () => {
+    it('rejects names with less than 2 characters or greater than 25 characters', async () => {
       await expect(upsertPlayer('p1', 'A')).rejects.toThrow();
       await expect(upsertPlayer('p1', '')).rejects.toThrow();
       await expect(upsertPlayer('p1', '   ')).rejects.toThrow();
@@ -108,9 +110,10 @@ describe('SkillType Leaderboard Backend and Persistence', () => {
       expect(result.completedAt).not.toBe(1000);
     });
 
-    it('prevents duplicate run insertion using runId (idempotent submission)', async () => {
+    it('prevents duplicate run insertion using runId / gameSessionId (idempotent submission)', async () => {
       const run = {
-        runId: 'run_unique_100',
+        gameSessionId: 'session_unique_100',
+        runId: 'session_unique_100',
         playerId: 'p1',
         playerName: 'Nisar',
         wpm: 70,
@@ -130,70 +133,156 @@ describe('SkillType Leaderboard Backend and Persistence', () => {
       expect(duplicate.alreadyRecorded).toBe(true);
       expect(duplicate.completedAt).toBe(first.completedAt);
 
-      // Leaderboard should have only 1 entry, not duplicate
+      // Leaderboard should have only 1 entry with 6000 points, not duplicated 12000
       const lb = await getWeeklyLeaderboard();
       expect(lb.entries.length).toBe(1);
+      expect(lb.entries[0].weeklyPoints).toBe(6000);
     });
   });
 
-  describe('Weekly Leaderboard Ranking Rules', () => {
-    it('ranks higher WPM first regardless of score', async () => {
+  describe('User Request Scenarios & Ranking Rules', () => {
+    it('TEST 1 & 2: New player Nisar joins, scores 500, appears on leaderboard with 500 points', async () => {
       await recordCompletedRun({
-        runId: 'r1',
-        playerId: 'p1',
-        playerName: 'Player1',
-        wpm: 60,
-        score: 10000,
-        accuracy: 90,
+        runId: 'game_1',
+        playerId: 'usr_nisar',
+        playerName: 'Nisar',
+        wpm: 32,
+        score: 500,
+        accuracy: 94,
+      });
+
+      const lb = await getWeeklyLeaderboard('usr_nisar');
+      expect(lb.entries.length).toBe(1);
+      expect(lb.entries[0].playerName).toBe('Nisar');
+      expect(lb.entries[0].weeklyPoints).toBe(500);
+      expect(lb.entries[0].bestWpm).toBe(32);
+      expect(lb.entries[0].rank).toBe(1);
+    });
+
+    it('TEST 3: Nisar plays again and scores 700 -> Weekly Points: 1200, only ONE Nisar row', async () => {
+      await recordCompletedRun({
+        runId: 'game_1',
+        playerId: 'usr_nisar',
+        playerName: 'Nisar',
+        wpm: 32,
+        score: 500,
+        accuracy: 94,
       });
 
       await recordCompletedRun({
-        runId: 'r2',
-        playerId: 'p2',
-        playerName: 'Player2',
-        wpm: 75,
-        score: 3000,
-        accuracy: 85,
+        runId: 'game_2',
+        playerId: 'usr_nisar',
+        playerName: 'Nisar',
+        wpm: 41,
+        score: 700,
+        accuracy: 96,
+      });
+
+      const lb = await getWeeklyLeaderboard('usr_nisar');
+      expect(lb.entries.length).toBe(1); // exactly one row
+      expect(lb.entries[0].playerName).toBe('Nisar');
+      expect(lb.entries[0].weeklyPoints).toBe(1200); // 500 + 700
+      expect(lb.entries[0].gamesPlayed).toBe(2);
+    });
+
+    it('TEST 4: Nisar WPM: Game 1 = 32, Game 2 = 41 -> Leaderboard WPM: 41', async () => {
+      await recordCompletedRun({
+        runId: 'game_1',
+        playerId: 'usr_nisar',
+        playerName: 'Nisar',
+        wpm: 32,
+        score: 500,
+        accuracy: 94,
+      });
+
+      await recordCompletedRun({
+        runId: 'game_2',
+        playerId: 'usr_nisar',
+        playerName: 'Nisar',
+        wpm: 41,
+        score: 700,
+        accuracy: 96,
+      });
+
+      // Third game with lower WPM (38 WPM)
+      await recordCompletedRun({
+        runId: 'game_3',
+        playerId: 'usr_nisar',
+        playerName: 'Nisar',
+        wpm: 38,
+        score: 400,
+        accuracy: 95,
+      });
+
+      const lb = await getWeeklyLeaderboard('usr_nisar');
+      // best_wpm = MAX(32, 41, 38) = 41
+      expect(lb.entries[0].bestWpm).toBe(41);
+      expect(lb.entries[0].weeklyPoints).toBe(1600);
+    });
+
+    it('TEST 5: Rehan scores 1500 -> Leaderboard automatically ranks #1 Rehan, #2 Nisar', async () => {
+      // Nisar has 1200 points
+      await recordCompletedRun({
+        runId: 'nisar_run',
+        playerId: 'usr_nisar',
+        playerName: 'Nisar',
+        wpm: 41,
+        score: 1200,
+        accuracy: 95,
+      });
+
+      // Rehan scores 1500 points
+      await recordCompletedRun({
+        runId: 'rehan_run',
+        playerId: 'usr_rehan',
+        playerName: 'Rehan',
+        wpm: 49,
+        score: 1500,
+        accuracy: 97,
       });
 
       const lb = await getWeeklyLeaderboard();
-      expect(lb.entries[0].playerName).toBe('Player2');
-      expect(lb.entries[0].wpm).toBe(75);
-      expect(lb.entries[1].playerName).toBe('Player1');
-      expect(lb.entries[1].wpm).toBe(60);
+      expect(lb.entries.length).toBe(2);
+      expect(lb.entries[0].playerName).toBe('Rehan');
+      expect(lb.entries[0].weeklyPoints).toBe(1500);
+      expect(lb.entries[0].rank).toBe(1);
+
+      expect(lb.entries[1].playerName).toBe('Nisar');
+      expect(lb.entries[1].weeklyPoints).toBe(1200);
+      expect(lb.entries[1].rank).toBe(2);
     });
 
-    it('breaks WPM ties using higher score first', async () => {
+    it('breaks Points ties using Best WPM DESC', async () => {
       await recordCompletedRun({
         runId: 'r1',
         playerId: 'p1',
-        playerName: 'LowerScore',
-        wpm: 80,
-        score: 4000,
+        playerName: 'LowerWpm',
+        wpm: 40,
+        score: 3000,
         accuracy: 95,
       });
 
       await recordCompletedRun({
         runId: 'r2',
         playerId: 'p2',
-        playerName: 'HigherScore',
-        wpm: 80,
-        score: 6500,
+        playerName: 'HigherWpm',
+        wpm: 55,
+        score: 3000,
         accuracy: 90,
       });
 
       const lb = await getWeeklyLeaderboard();
-      expect(lb.entries[0].playerName).toBe('HigherScore');
-      expect(lb.entries[1].playerName).toBe('LowerScore');
+      expect(lb.entries[0].playerName).toBe('HigherWpm');
+      expect(lb.entries[1].playerName).toBe('LowerWpm');
     });
 
-    it('breaks WPM and score ties using higher accuracy first', async () => {
+    it('breaks Points and WPM ties using Best Accuracy DESC', async () => {
       await recordCompletedRun({
         runId: 'r1',
         playerId: 'p1',
         playerName: 'Acc90',
-        wpm: 80,
-        score: 5000,
+        wpm: 50,
+        score: 3000,
         accuracy: 90,
       });
 
@@ -201,8 +290,8 @@ describe('SkillType Leaderboard Backend and Persistence', () => {
         runId: 'r2',
         playerId: 'p2',
         playerName: 'Acc98',
-        wpm: 80,
-        score: 5000,
+        wpm: 50,
+        score: 3000,
         accuracy: 98,
       });
 
@@ -211,82 +300,95 @@ describe('SkillType Leaderboard Backend and Persistence', () => {
       expect(lb.entries[1].playerName).toBe('Acc90');
     });
 
-    it('breaks WPM, score, and accuracy ties with earlier completed run first', () => {
-      const earlier = { wpm: 80, score: 5000, accuracy: 95, completedAt: 1000 };
-      const later = { wpm: 80, score: 5000, accuracy: 95, completedAt: 2000 };
+    it('TEST 8: Saturday 11:59 PM reset via week_id preserves history', async () => {
+      // Week 1 (2026-W39)
+      await recordCompletedRun({
+        runId: 'w39_nisar',
+        playerId: 'usr_nisar',
+        playerName: 'Nisar',
+        wpm: 52,
+        score: 5800,
+        accuracy: 98,
+        weekId: '2026-W39',
+      });
 
-      expect(compareRuns(earlier, later)).toBeLessThan(0);
-      expect(compareRuns(later, earlier)).toBeGreaterThan(0);
+      // Query Week 1
+      const lbW39 = await getWeeklyLeaderboard(null, '2026-W39');
+      expect(lbW39.entries.length).toBe(1);
+      expect(lbW39.entries[0].playerName).toBe('Nisar');
+      expect(lbW39.entries[0].weeklyPoints).toBe(5800);
+
+      // Now query Next Week (2026-W40) before anyone has played
+      const lbW40Before = await getWeeklyLeaderboard(null, '2026-W40');
+      expect(lbW40Before.entries.length).toBe(0); // Clean reset, no old participants displayed
+
+      // In Week 2, Rehan plays
+      await recordCompletedRun({
+        runId: 'w40_rehan',
+        playerId: 'usr_rehan',
+        playerName: 'Rehan',
+        wpm: 49,
+        score: 1200,
+        accuracy: 97,
+        weekId: '2026-W40',
+      });
+
+      const lbW40After = await getWeeklyLeaderboard(null, '2026-W40');
+      expect(lbW40After.entries.length).toBe(1);
+      expect(lbW40After.entries[0].playerName).toBe('Rehan');
+
+      // Crucial: Old Week 1 (2026-W39) data remains safely preserved in history!
+      const lbW39Historical = await getWeeklyLeaderboard(null, '2026-W39');
+      expect(lbW39Historical.entries.length).toBe(1);
+      expect(lbW39Historical.entries[0].playerName).toBe('Nisar');
+      expect(lbW39Historical.entries[0].weeklyPoints).toBe(5800);
     });
 
-    it('displays only ONE best run per player on the weekly leaderboard', async () => {
-      // Nisar plays game 1: 50 WPM
+    it('Daily Leaderboard tracks points for current day and resets on new day', async () => {
+      // Day 1: 2026-10-03
       await recordCompletedRun({
-        runId: 'nisar_1',
+        runId: 'd1_nisar',
+        playerId: 'usr_nisar',
+        playerName: 'Nisar',
+        wpm: 45,
+        score: 600,
+        accuracy: 96,
+        dayId: '2026-10-03',
+      });
+
+      const dailyD1 = await getDailyLeaderboard(null, '2026-10-03');
+      expect(dailyD1.entries.length).toBe(1);
+      expect(dailyD1.entries[0].dailyPoints).toBe(600);
+
+      // Next Day: 2026-10-04 (has 0 entries until played)
+      const dailyD2Before = await getDailyLeaderboard(null, '2026-10-04');
+      expect(dailyD2Before.entries.length).toBe(0);
+
+      // On Day 2, Nisar plays morning (300) and afternoon (500)
+      await recordCompletedRun({
+        runId: 'd2_nisar_morning',
+        playerId: 'usr_nisar',
+        playerName: 'Nisar',
+        wpm: 48,
+        score: 300,
+        accuracy: 97,
+        dayId: '2026-10-04',
+      });
+
+      await recordCompletedRun({
+        runId: 'd2_nisar_afternoon',
         playerId: 'usr_nisar',
         playerName: 'Nisar',
         wpm: 50,
-        score: 3000,
-        accuracy: 95,
+        score: 500,
+        accuracy: 98,
+        dayId: '2026-10-04',
       });
 
-      // Nisar plays game 2: 70 WPM (better WPM)
-      await recordCompletedRun({
-        runId: 'nisar_2',
-        playerId: 'usr_nisar',
-        playerName: 'Nisar',
-        wpm: 70,
-        score: 4500,
-        accuracy: 97,
-      });
-
-      // Another player
-      await recordCompletedRun({
-        runId: 'sarah_1',
-        playerId: 'usr_sarah',
-        playerName: 'Sarah',
-        wpm: 60,
-        score: 5000,
-        accuracy: 96,
-      });
-
-      const lb = await getWeeklyLeaderboard('usr_nisar');
-      expect(lb.entries.length).toBe(2);
-      expect(lb.entries[0].playerName).toBe('Nisar');
-      expect(lb.entries[0].wpm).toBe(70);
-      expect(lb.entries[0].rank).toBe(1);
-      expect(lb.playerRank?.rank).toBe(1);
-
-      // Now Nisar plays game 3: equal WPM (70) but higher score (6000)
-      await recordCompletedRun({
-        runId: 'nisar_3',
-        playerId: 'usr_nisar',
-        playerName: 'Nisar',
-        wpm: 70,
-        score: 6000,
-        accuracy: 97,
-      });
-
-      const lbAfter = await getWeeklyLeaderboard('usr_nisar');
-      expect(lbAfter.entries.length).toBe(2);
-      expect(lbAfter.entries[0].runId).toBe('nisar_3');
-      expect(lbAfter.entries[0].score).toBe(6000);
-    });
-
-    it('enforces rolling 7-day window and filters out older runs', async () => {
-      // Modern run (today)
-      await recordCompletedRun({
-        runId: 'recent_1',
-        playerId: 'p_recent',
-        playerName: 'RecentPlayer',
-        wpm: 65,
-        score: 4000,
-        accuracy: 95,
-      });
-
-      const lb = await getWeeklyLeaderboard();
-      expect(lb.entries.length).toBe(1);
-      expect(lb.entries[0].runId).toBe('recent_1');
+      const dailyD2After = await getDailyLeaderboard(null, '2026-10-04');
+      expect(dailyD2After.entries.length).toBe(1); // exactly one row
+      expect(dailyD2After.entries[0].dailyPoints).toBe(800); // 300 + 500
+      expect(dailyD2After.entries[0].bestWpm).toBe(50);
     });
   });
 
@@ -397,10 +499,7 @@ describe('SkillType Leaderboard Backend and Persistence', () => {
       expect(topEntry).toHaveProperty('wpm', 85);
       expect(topEntry).toHaveProperty('score', 7000);
       expect(topEntry).toHaveProperty('accuracy', 98);
-      expect(topEntry).toHaveProperty('wave', 8);
-      expect(topEntry).toHaveProperty('wordsCompleted', 35);
-      expect(topEntry).toHaveProperty('durationSeconds', 90);
-      expect(topEntry).toHaveProperty('completedAt');
+      expect(topEntry).toHaveProperty('lastPlayedAt');
 
       // Check target player rank
       expect(res.body.playerRank).not.toBeNull();

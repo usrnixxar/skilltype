@@ -3,11 +3,32 @@
 import { EnemyType, WaveConfig } from './types';
 import { Difficulty } from '../utils/storage';
 
+/**
+ * Target WPM mapping per level / wave:
+ * Wave 1 = 25 WPM (starting baseline)
+ * Wave 2 = 28 WPM
+ * Wave 3 = 30 WPM
+ * Wave 4 = 33 WPM
+ * Wave 5 = 35 WPM
+ * Followed by smooth progression up to Level 15 (70 WPM).
+ */
 export function getTargetWPM(level: number): number {
   const wpmByLevel = [
-    30, 33, 36, 39, 42,
-    45, 48, 51, 54, 57,
-    60, 63, 65, 68, 70
+    25, // Level 1 (25 WPM baseline)
+    28, // Level 2
+    30, // Level 3
+    33, // Level 4
+    35, // Level 5
+    38, // Level 6
+    42, // Level 7
+    46, // Level 8
+    50, // Level 9
+    54, // Level 10
+    58, // Level 11
+    62, // Level 12
+    65, // Level 13
+    68, // Level 14
+    70  // Level 15 (max difficulty)
   ];
 
   const safeLevel = Math.min(Math.max(level, 1), 15);
@@ -50,6 +71,7 @@ export class WaveManager {
     this.waveTransitionTimeRemainingMs = 0;
     this.spawnQueue = [];
     this.spawnIntervalMs = Math.round(60000 / getTargetWPM(startingWave));
+    this.timeUntilNextSpawnMs = 0;
   }
 
   /**
@@ -63,7 +85,7 @@ export class WaveManager {
     // Enemy count scales with wave
     const totalEnemies = Math.min(30, Math.floor((4 + wave * 2) * diffMult));
 
-    // Spawn interval dynamically calculated from level target WPM (30 WPM at L1 to 70 WPM at L15)
+    // Spawn interval dynamically calculated from level target WPM (25 WPM at L1 to 70 WPM at L15)
     const targetWpm = getTargetWPM(wave);
     const spawnIntervalMs = Math.round(60000 / targetWpm);
 
@@ -83,12 +105,15 @@ export class WaveManager {
       if (scoutCount < 1) scoutCount = 1;
     }
 
+    // Smooth speed scaling synchronized with target WPM (Wave 1 at 25 WPM has 1.0 base speed)
+    const speedMultiplier = targetWpm / 25;
+
     return {
       waveNumber: wave,
       totalEnemies,
       spawnIntervalMs,
       targetWpm,
-      speedMultiplier: 1.0 + (wave - 1) * 0.04,
+      speedMultiplier,
       scoutCount,
       fighterCount,
       heavyCount

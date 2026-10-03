@@ -1,6 +1,12 @@
 /**
- * Player Profile Management for SkillType
- * Provides guest profiles with unique IDs to support shared coaching-center computers.
+ * Player Profile and Identity Management for SkillType
+ *
+ * Requirements:
+ * - Mandatory player name (2–25 characters, trimmed).
+ * - Persistent unique player_id stored in localStorage (`skilltype_player_id`).
+ * - Same player_id reused across sessions so scores accumulate without duplicates.
+ * - Player name can be updated at any time.
+ * - Never defaults to "Guest", "Unknown", "undefined", "null", or "Player 1".
  */
 
 export interface PlayerProfile {
@@ -9,84 +15,188 @@ export interface PlayerProfile {
   createdAt: number;
 }
 
-const STORAGE_KEY_ACTIVE_PLAYER = 'skilltype_active_player';
-const STORAGE_KEY_ALL_PLAYERS = 'skilltype_local_players';
+export const STORAGE_KEY_PLAYER_ID = 'skilltype_player_id';
+export const STORAGE_KEY_PLAYER_NAME = 'skilltype_player_name';
+export const STORAGE_KEY_ACTIVE_PLAYER = 'skilltype_active_player';
+export const STORAGE_KEY_ALL_PLAYERS = 'skilltype_local_players';
 
 /**
- * Validate display name:
- * - Trimmed length between 2 and 24 characters
- * - Allows letters, numbers, spaces, and safe punctuation
+ * Generate a standard RFC4122 v4 UUID string.
+ */
+export function generateUuid(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === 'x' ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+}
+
+/**
+ * Backwards-compatible alias for generating player ID as UUID.
+ */
+export function generatePlayerId(): string {
+  return generateUuid();
+}
+
+/**
+ * Strip HTML and control characters, trim and limit to 25 characters.
+ */
+export function sanitizePlayerName(name: string): string {
+  if (typeof name !== 'string') return '';
+  return name
+    .replace(/<[^>]*>?/gm, '')
+    .replace(/[\x00-\x1F\x7F]/g, '')
+    .trim()
+    .substring(0, 25);
+}
+
+/**
+ * Sanitize and validate player name:
+ * - 2 to 25 characters
+ * - Trim extra whitespace
+ * - Disallow HTML / script injection
  */
 export function validatePlayerName(name: string): {
   valid: boolean;
   error?: string;
   trimmedName: string;
 } {
-  const trimmed = (name || '').trim();
+  if (typeof name !== 'string') {
+    return { valid: false, error: 'Name must be text.', trimmedName: '' };
+  }
 
-  if (trimmed.length < 2) {
+  // Strip HTML tags and control characters
+  const cleaned = name
+    .replace(/<[^>]*>?/gm, '')
+    .replace(/[\x00-\x1F\x7F]/g, '')
+    .trim();
+
+  if (cleaned.length < 2) {
     return {
       valid: false,
       error: 'Name must be at least 2 characters long.',
-      trimmedName: trimmed,
+      trimmedName: cleaned,
     };
   }
 
-  if (trimmed.length > 24) {
+  if (cleaned.length > 25) {
     return {
       valid: false,
-      error: 'Name must be 24 characters or fewer.',
-      trimmedName: trimmed.substring(0, 24),
+      error: 'Name must be 25 characters or fewer.',
+      trimmedName: cleaned.substring(0, 25),
     };
   }
 
   return {
     valid: true,
-    trimmedName: trimmed,
+    trimmedName: cleaned,
   };
 }
 
 /**
- * Generate a unique ID for a new guest player profile.
- * Format: usr_<timestamp_base36>_<random_hex>
+ * Get the permanent player_id from localStorage, or generate a fresh UUID and store it.
  */
-export function generatePlayerId(): string {
-  const ts = Date.now().toString(36);
-  const rand = Math.random().toString(36).substring(2, 9);
-  return `usr_${ts}_${rand}`;
+export function getOrCreatePlayerId(): string {
+  try {
+    const existing = localStorage.getItem(STORAGE_KEY_PLAYER_ID);
+    if (existing && existing.trim()) {
+      return existing.trim();
+    }
+
+    // Check if legacy profile has an ID
+    const legacy = localStorage.getItem(STORAGE_KEY_ACTIVE_PLAYER);
+    if (legacy) {
+      try {
+        const parsed = JSON.parse(legacy);
+        if (parsed?.id && typeof parsed.id === 'string' && parsed.id.trim()) {
+          const id = parsed.id.trim();
+          localStorage.setItem(STORAGE_KEY_PLAYER_ID, id);
+          return id;
+        }
+      } catch {}
+    }
+
+    const newId = generateUuid();
+    localStorage.setItem(STORAGE_KEY_PLAYER_ID, newId);
+    return newId;
+  } catch {
+    return generateUuid();
+  }
 }
 
 /**
  * Load the active player profile from browser localStorage.
+ * Returns null if no valid name has been entered yet.
  */
 export function loadActivePlayer(): PlayerProfile | null {
   try {
+    const storedId = localStorage.getItem(STORAGE_KEY_PLAYER_ID);
+    const storedName = localStorage.getItem(STORAGE_KEY_PLAYER_NAME);
+
+    if (storedName && storedName.trim()) {
+      const validation = validatePlayerName(storedName);
+      if (validation.valid) {
+        const id = storedId && storedId.trim() ? storedId.trim() : getOrCreatePlayerId();
+        return {
+          id,
+          name: validation.trimmedName,
+          createdAt: Date.now(),
+        };
+      }
+    }
+
+    // Legacy check
     const raw = localStorage.getItem(STORAGE_KEY_ACTIVE_PLAYER);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw);
-    if (parsed && typeof parsed.id === 'string' && typeof parsed.name === 'string') {
-      return parsed;
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed.name === 'string') {
+        const validation = validatePlayerName(parsed.name);
+        if (validation.valid) {
+          const id = parsed.id && typeof parsed.id === 'string' ? parsed.id : getOrCreatePlayerId();
+          localStorage.setItem(STORAGE_KEY_PLAYER_ID, id);
+          localStorage.setItem(STORAGE_KEY_PLAYER_NAME, validation.trimmedName);
+          return {
+            id,
+            name: validation.trimmedName,
+            createdAt: Number(parsed.createdAt) || Date.now(),
+          };
+        }
+      }
     }
   } catch (err) {
-    console.warn('Failed to parse active player profile:', err);
+    console.warn('Failed to load active player profile:', err);
   }
   return null;
 }
 
 /**
- * Save active player profile to localStorage and remember in local history.
+ * Save active player profile to localStorage.
+ * Stores under skilltype_player_id, skilltype_player_name, and skilltype_active_player.
  */
 export function saveActivePlayer(profile: PlayerProfile): void {
   try {
-    localStorage.setItem(STORAGE_KEY_ACTIVE_PLAYER, JSON.stringify(profile));
+    const validation = validatePlayerName(profile.name);
+    const safeName = validation.trimmedName || profile.name.trim();
 
-    // Also update all local profiles
+    localStorage.setItem(STORAGE_KEY_PLAYER_ID, profile.id);
+    localStorage.setItem(STORAGE_KEY_PLAYER_NAME, safeName);
+    localStorage.setItem(
+      STORAGE_KEY_ACTIVE_PLAYER,
+      JSON.stringify({ ...profile, name: safeName })
+    );
+
+    // Keep recent local profiles for switching on shared computers
     const all = loadAllLocalPlayers();
     const existingIndex = all.findIndex((p) => p.id === profile.id);
+    const updatedProfile = { ...profile, name: safeName };
+
     if (existingIndex >= 0) {
-      all[existingIndex] = profile;
+      all[existingIndex] = updatedProfile;
     } else {
-      all.unshift(profile);
+      all.unshift(updatedProfile);
     }
     localStorage.setItem(STORAGE_KEY_ALL_PLAYERS, JSON.stringify(all.slice(0, 20)));
   } catch (err) {
@@ -96,7 +206,6 @@ export function saveActivePlayer(profile: PlayerProfile): void {
 
 /**
  * Load all player profiles known to this browser.
- * Enables quick switching between students on shared computers.
  */
 export function loadAllLocalPlayers(): PlayerProfile[] {
   try {
@@ -105,7 +214,7 @@ export function loadAllLocalPlayers(): PlayerProfile[] {
     const parsed = JSON.parse(raw);
     if (Array.isArray(parsed)) {
       return parsed.filter(
-        (p) => p && typeof p.id === 'string' && typeof p.name === 'string'
+        (p) => p && typeof p.id === 'string' && typeof p.name === 'string' && p.name.trim().length >= 2
       );
     }
   } catch (err) {
@@ -115,13 +224,14 @@ export function loadAllLocalPlayers(): PlayerProfile[] {
 }
 
 /**
- * Create a new guest player profile with a fresh unique ID.
- * Identical names entered by different students will NEVER merge because of distinct IDs.
+ * Create or update a player profile with a validated name.
+ * Uses existing player_id if available so scores accumulate safely.
  */
-export function createPlayerProfile(name: string): PlayerProfile {
+export function createPlayerProfile(name: string, explicitId?: string): PlayerProfile {
   const { trimmedName } = validatePlayerName(name);
+  const id = explicitId || getOrCreatePlayerId();
   const profile: PlayerProfile = {
-    id: generatePlayerId(),
+    id,
     name: trimmedName,
     createdAt: Date.now(),
   };

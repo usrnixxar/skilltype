@@ -10,18 +10,18 @@ describe('Wave Speed Progression and Word Spawning Logic', () => {
 
   describe('getTargetWPM mapping', () => {
     const expectedWpm = [
-      { level: 1, wpm: 30 },
-      { level: 2, wpm: 33 },
-      { level: 3, wpm: 36 },
-      { level: 4, wpm: 39 },
-      { level: 5, wpm: 42 },
-      { level: 6, wpm: 45 },
-      { level: 7, wpm: 48 },
-      { level: 8, wpm: 51 },
-      { level: 9, wpm: 54 },
-      { level: 10, wpm: 57 },
-      { level: 11, wpm: 60 },
-      { level: 12, wpm: 63 },
+      { level: 1, wpm: 25 },
+      { level: 2, wpm: 28 },
+      { level: 3, wpm: 30 },
+      { level: 4, wpm: 33 },
+      { level: 5, wpm: 35 },
+      { level: 6, wpm: 38 },
+      { level: 7, wpm: 42 },
+      { level: 8, wpm: 46 },
+      { level: 9, wpm: 50 },
+      { level: 10, wpm: 54 },
+      { level: 11, wpm: 58 },
+      { level: 12, wpm: 62 },
       { level: 13, wpm: 65 },
       { level: 14, wpm: 68 },
       { level: 15, wpm: 70 },
@@ -33,9 +33,9 @@ describe('Wave Speed Progression and Word Spawning Logic', () => {
       });
     });
 
-    it('clamps levels below 1 to Level 1 (30 WPM)', () => {
-      expect(getTargetWPM(0)).toBe(30);
-      expect(getTargetWPM(-5)).toBe(30);
+    it('clamps levels below 1 to Level 1 (25 WPM)', () => {
+      expect(getTargetWPM(0)).toBe(25);
+      expect(getTargetWPM(-5)).toBe(25);
     });
 
     it('clamps levels above 15 to Level 15 (70 WPM) to not exceed 70 WPM', () => {
@@ -47,21 +47,29 @@ describe('Wave Speed Progression and Word Spawning Logic', () => {
 
   describe('Spawn Interval Calculations', () => {
     it('calculates the correct spawn interval from target WPM for each level', () => {
-      // Level 1: 30 WPM -> 60000 / 30 = 2000 ms
+      // Level 1: 25 WPM -> 60000 / 25 = 2400 ms
       const config1 = waveManager.generateWaveConfig(1, 'normal');
-      expect(config1.spawnIntervalMs).toBe(2000);
+      expect(config1.spawnIntervalMs).toBe(2400);
 
-      // Level 2: 33 WPM -> 60000 / 33 = 1818 ms
+      // Level 2: 28 WPM -> 60000 / 28 = 2143 ms
       const config2 = waveManager.generateWaveConfig(2, 'normal');
-      expect(config2.spawnIntervalMs).toBe(1818);
+      expect(config2.spawnIntervalMs).toBe(2143);
 
-      // Level 5: 42 WPM -> 60000 / 42 = 1429 ms
+      // Level 3: 30 WPM -> 60000 / 30 = 2000 ms
+      const config3 = waveManager.generateWaveConfig(3, 'normal');
+      expect(config3.spawnIntervalMs).toBe(2000);
+
+      // Level 4: 33 WPM -> 60000 / 33 = 1818 ms
+      const config4 = waveManager.generateWaveConfig(4, 'normal');
+      expect(config4.spawnIntervalMs).toBe(1818);
+
+      // Level 5: 35 WPM -> 60000 / 35 = 1714 ms
       const config5 = waveManager.generateWaveConfig(5, 'normal');
-      expect(config5.spawnIntervalMs).toBe(1429);
+      expect(config5.spawnIntervalMs).toBe(1714);
 
-      // Level 10: 57 WPM -> 60000 / 57 = 1053 ms
+      // Level 10: 54 WPM -> 60000 / 54 = 1111 ms
       const config10 = waveManager.generateWaveConfig(10, 'normal');
-      expect(config10.spawnIntervalMs).toBe(1053);
+      expect(config10.spawnIntervalMs).toBe(1111);
 
       // Level 15: 70 WPM -> 60000 / 70 = 857 ms
       const config15 = waveManager.generateWaveConfig(15, 'normal');
@@ -77,14 +85,14 @@ describe('Wave Speed Progression and Word Spawning Logic', () => {
       }
     });
 
-    it('confirms Level 15 is noticeably faster (>2.3x) than Level 1', () => {
+    it('confirms Level 15 is noticeably faster (>2.7x) than Level 1', () => {
       const config1 = waveManager.generateWaveConfig(1, 'normal');
       const config15 = waveManager.generateWaveConfig(15, 'normal');
 
-      // 2000 ms vs 857 ms: speed ratio 2000 / 857 = 2.33x
-      expect(config1.spawnIntervalMs).toBe(2000);
+      // 2400 ms vs 857 ms: speed ratio 2400 / 857 = 2.80x
+      expect(config1.spawnIntervalMs).toBe(2400);
       expect(config15.spawnIntervalMs).toBe(857);
-      expect(config1.spawnIntervalMs / config15.spawnIntervalMs).toBeGreaterThan(2.3);
+      expect(config1.spawnIntervalMs / config15.spawnIntervalMs).toBeGreaterThan(2.7);
     });
 
     it('keeps Level 15 spawn speed beyond Level 15', () => {
@@ -98,9 +106,9 @@ describe('Wave Speed Progression and Word Spawning Logic', () => {
   });
 
   describe('Wave Progression and Spawn Interval Updates', () => {
-    it('initializes Level 1 with 30 WPM spawn interval (2000 ms)', () => {
+    it('initializes Level 1 with 25 WPM spawn interval (2400 ms)', () => {
       expect(waveManager.getCurrentWave()).toBe(1);
-      expect(waveManager.getSpawnIntervalMs()).toBe(2000);
+      expect(waveManager.getSpawnIntervalMs()).toBe(2400);
     });
 
     it('immediately updates spawn interval for Level 2 upon clearing Level 1', () => {
@@ -114,8 +122,8 @@ describe('Wave Speed Progression and Word Spawning Logic', () => {
       const completed = waveManager.checkWaveCompletion(0);
       expect(completed).toBe(true);
 
-      // Immediately after clearing Level 1, spawnIntervalMs must update for Level 2 (1818 ms)
-      expect(waveManager.getSpawnIntervalMs()).toBe(1818);
+      // Immediately after clearing Level 1, spawnIntervalMs must update for Level 2 (2143 ms)
+      expect(waveManager.getSpawnIntervalMs()).toBe(2143);
     });
 
     it('transitions to Level 2 and starts wave with faster spawn rate', () => {
@@ -131,8 +139,8 @@ describe('Wave Speed Progression and Word Spawning Logic', () => {
       // Start Level 2
       const config2 = waveManager.startWave('normal');
       expect(config2.waveNumber).toBe(2);
-      expect(config2.spawnIntervalMs).toBe(1818);
-      expect(waveManager.getSpawnIntervalMs()).toBe(1818);
+      expect(config2.spawnIntervalMs).toBe(2143);
+      expect(waveManager.getSpawnIntervalMs()).toBe(2143);
     });
 
     it('progressively clears and advances through Levels 5, 10, and 15 with matching speeds', () => {
