@@ -70,6 +70,42 @@ export interface SubmitRunResult {
 }
 
 /**
+ * Repair a leaderboard row's player_name for one specific player/week only.
+ * This is intentionally scoped by player_id + week_id so one participant's
+ * name can never overwrite another participant's row.
+ */
+async function repairCurrentPlayerName(
+  playerId: string,
+  playerName: string,
+  weekId: string
+): Promise<void> {
+  const safePlayerId = String(playerId || '').trim();
+  const safeName = sanitizePlayerName(String(playerName || ''));
+
+  if (!safePlayerId || safeName.length < 2 || !weekId) return;
+
+  const supabase = getSupabaseClient();
+  if (!supabase) return;
+
+  try {
+    const { error } = await supabase
+      .from('leaderboard')
+      .update({
+        player_name: safeName,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('player_id', safePlayerId)
+      .eq('week_id', weekId);
+
+    if (error) {
+      console.warn('[Leaderboard] Could not repair player name:', error.message || error);
+    }
+  } catch (err) {
+    console.warn('[Leaderboard] Player-name repair failed:', err);
+  }
+}
+
+/**
  * Compare two leaderboard entries according to official SkillType weekly leaderboard ranking rules:
  * 1. Highest Points first (weekly_points or score)
  * 2. If Points tie -> highest Best WPM
@@ -203,6 +239,35 @@ export async function fetchWeeklyLeaderboard(
           return entry;
         });
 
+        // Self-heal legacy/current-player rows that were previously saved
+        // without a display name. This only repairs the active player's row.
+        if (playerId && targetWeekId) {
+          try {
+            const { getPlayerName } = await import('./playerProfile');
+            const localName = getPlayerName();
+            const currentRow = entries.find((entry) => entry.playerId === playerId);
+            if (
+              currentRow &&
+              localName &&
+              localName.length >= 2 &&
+              (!currentRow.playerName ||
+                currentRow.playerName === 'Unnamed Player')
+            ) {
+              await repairCurrentPlayerName(playerId, localName, targetWeekId);
+              currentRow.playerName = localName;
+              currentRow.player_name = localName;
+              currentRow.name = localName;
+              if (playerRankEntry && playerRankEntry.playerId === playerId) {
+                playerRankEntry.playerName = localName;
+                playerRankEntry.player_name = localName;
+                playerRankEntry.name = localName;
+              }
+            }
+          } catch (repairErr) {
+            console.warn('[Leaderboard] Self-heal skipped:', repairErr);
+          }
+        }
+
         return {
           entries,
           totalEligible: entries.length,
@@ -315,13 +380,29 @@ export async function submitGameRun(
       if (error) console.log('Leaderboard save error:', error);
 
       if (!error && data) {
+        // Important: older deployed RPC versions may successfully save score
+        // while leaving player_name blank/old. Always repair the specific
+        // current player's current-week row before returning success.
+        await repairCurrentPlayerName(
+          cleanPayload.playerId,
+          cleanPayload.playerName,
+          weekId
+        );
+
         return {
           success: true,
           alreadyRecorded: Boolean(data.alreadyRecorded),
           sessionId,
           runId: sessionId,
           completedAt: now,
-          record: data.record,
+          record: data.record
+            ? {
+                ...data.record,
+                player_name: cleanPayload.playerName,
+                playerName: cleanPayload.playerName,
+                name: cleanPayload.playerName,
+              }
+            : data.record,
         };
       }
 
@@ -367,13 +448,23 @@ export async function submitGameRun(
         if (updateError) console.log('Leaderboard direct update error:', updateError);
 
         if (!updateError && updated && updated.length > 0) {
+          await repairCurrentPlayerName(
+            cleanPayload.playerId,
+            cleanPayload.playerName,
+            weekId
+          );
           return {
             success: true,
             alreadyRecorded: false,
             sessionId,
             runId: sessionId,
             completedAt: now,
-            record: updated[0],
+            record: {
+              ...updated[0],
+              player_name: cleanPayload.playerName,
+              playerName: cleanPayload.playerName,
+              name: cleanPayload.playerName,
+            },
           };
         }
       } else {
@@ -401,13 +492,23 @@ export async function submitGameRun(
         if (insertError) console.log('Leaderboard direct insert error:', insertError);
 
         if (!insertError && inserted && inserted.length > 0) {
+          await repairCurrentPlayerName(
+            cleanPayload.playerId,
+            cleanPayload.playerName,
+            weekId
+          );
           return {
             success: true,
             alreadyRecorded: false,
             sessionId,
             runId: sessionId,
             completedAt: now,
-            record: inserted[0],
+            record: {
+              ...inserted[0],
+              player_name: cleanPayload.playerName,
+              playerName: cleanPayload.playerName,
+              name: cleanPayload.playerName,
+            },
           };
         }
       }
