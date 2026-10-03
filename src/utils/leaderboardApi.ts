@@ -257,11 +257,9 @@ export async function fetchWeeklyLeaderboard(
               currentRow.playerName = localName;
               currentRow.player_name = localName;
               currentRow.name = localName;
-              if (playerRankEntry && playerRankEntry.playerId === playerId) {
-                playerRankEntry.playerName = localName;
-                playerRankEntry.player_name = localName;
-                playerRankEntry.name = localName;
-              }
+              // Reuse the already-repaired entry as the current player's rank
+              // instead of mutating a closure-assigned nullable variable.
+              playerRankEntry = currentRow;
             }
           } catch (repairErr) {
             console.warn('[Leaderboard] Self-heal skipped:', repairErr);
