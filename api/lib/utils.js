@@ -73,6 +73,7 @@ export function parseQueryParams(req) {
 
 export function sendJsonResponse(res, statusCode, data) {
   setCorsHeaders(res);
+  res.setHeader('Cache-Control', 'no-store');
 
   if (typeof res.status === 'function' && typeof res.json === 'function') {
     res.setHeader('Content-Type', 'application/json');

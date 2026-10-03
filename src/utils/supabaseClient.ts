@@ -1,23 +1,10 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
-// Environment variable lookup (Vite frontend or Node environment)
-function getEnv(key: string): string {
-  try {
-    const meta = import.meta as any;
-    if (meta && meta.env && meta.env[key]) {
-      return String(meta.env[key]);
-    }
-  } catch {}
-  try {
-    if (typeof process !== 'undefined' && process.env && process.env[key]) {
-      return String(process.env[key]);
-    }
-  } catch {}
-  return '';
-}
-
-const SUPABASE_URL = getEnv('VITE_SUPABASE_URL') || getEnv('SUPABASE_URL');
-const SUPABASE_ANON_KEY = getEnv('VITE_SUPABASE_ANON_KEY') || getEnv('SUPABASE_ANON_KEY');
+// Vite replaces these exact property accesses at build time. Aliasing
+// import.meta before reading .env leaves an undefined runtime property.
+// Only deliberately public VITE_ configuration belongs in this bundle.
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || '';
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
 let supabaseInstance: SupabaseClient | null = null;
 

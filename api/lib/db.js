@@ -108,7 +108,17 @@ export function isCloudDatabaseConfigured() {
 
 function getSqlClient() {
   const connStr = getConnectionString();
-  if (!connStr) return null;
+  if (!connStr) {
+    // Separate Vercel functions/instances do not share these Maps. Never
+    // acknowledge a production save that another request cannot retrieve.
+    if (process.env.VERCEL === '1' || process.env.NODE_ENV === 'production') {
+      const error = new Error('Leaderboard storage is not configured.');
+      error.statusCode = 503;
+      error.code = 'LEADERBOARD_STORAGE_NOT_CONFIGURED';
+      throw error;
+    }
+    return null;
+  }
 
   if (!cachedSqlClient) {
     cachedSqlClient = neon(connStr);

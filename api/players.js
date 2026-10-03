@@ -20,7 +20,7 @@ export default async function handler(req, res) {
     });
   } catch (error) {
     console.error('[API /api/players Error]:', error);
-    return sendJsonResponse(res, 400, {
+    return sendJsonResponse(res, error.statusCode || 400, {
       error: error.message || 'Failed to register or update player profile',
     });
   }

@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import {
   sanitizePlayerName,
   upsertPlayer,
@@ -56,6 +56,22 @@ function createMockResponse() {
 describe('SkillType Leaderboard Backend and Persistence', () => {
   beforeEach(() => {
     resetInMemoryDatabase();
+  });
+
+  afterEach(() => vi.unstubAllEnvs());
+
+  it('rejects production reads and saves without durable storage', async () => {
+    for (const key of ['POSTGRES_URL', 'POSTGRES_PRISMA_URL', 'DATABASE_URL', 'NEON_DATABASE_URL']) vi.stubEnv(key, '');
+    vi.stubEnv('VERCEL', '1');
+    await expect(getWeeklyLeaderboard()).rejects.toThrow('storage is not configured');
+    const req = { method: 'POST', body: { runId: 'unsaved', playerId: 'p1', playerName: 'Nisar', score: 100, wpm: 25, accuracy: 100 } };
+    const res = createMockResponse();
+    await runsHandler(req, res);
+    expect(res.statusCode).toBe(503);
+    expect(res.body.success).not.toBe(true);
+    expect(res.headers['cache-control']).toBe('no-store');
+    vi.stubEnv('VERCEL', '');
+    expect((await getWeeklyLeaderboard()).entries).toHaveLength(0);
   });
 
   describe('Player Name Sanitization & Validation', () => {
@@ -393,14 +409,15 @@ describe('SkillType Leaderboard Backend and Persistence', () => {
   });
 
   describe('Vercel Serverless Function Endpoints', () => {
-    it('GET /api/health returns status ok and service name', async () => {
+    it('GET /api/health reports absent persistent storage', async () => {
       const req = { method: 'GET' };
       const res = createMockResponse();
 
       await healthHandler(req as any, res as any);
-      expect(res.statusCode).toBe(200);
+      expect(res.statusCode).toBe(503);
       expect(res.body).toEqual({
-        status: 'ok',
+        status: 'unconfigured',
+        persistentStorageConfigured: false,
         service: 'SkillType Leaderboard Service',
       });
     });

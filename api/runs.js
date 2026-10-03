@@ -15,7 +15,7 @@ export default async function handler(req, res) {
     return sendJsonResponse(res, 200, result);
   } catch (error) {
     console.error('[API /api/runs Error]:', error);
-    return sendJsonResponse(res, 400, {
+    return sendJsonResponse(res, error.statusCode || 400, {
       error: error.message || 'Failed to record completed game run',
     });
   }

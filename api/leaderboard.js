@@ -25,7 +25,7 @@ export default async function handler(req, res) {
     return sendJsonResponse(res, 200, leaderboardData);
   } catch (error) {
     console.error('[API /api/leaderboard Error]:', error);
-    return sendJsonResponse(res, 500, {
+    return sendJsonResponse(res, error.statusCode || 500, {
       error: error.message || 'Failed to fetch leaderboard data',
     });
   }
