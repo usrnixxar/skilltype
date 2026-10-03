@@ -10,7 +10,8 @@ export default async function handler(req, res) {
 
   try {
     const body = await parseJsonBody(req);
-    const { id, name } = body;
+    const id = body.id || body.playerId || body.player_id;
+    const name = body.name || body.playerName || body.player_name;
 
     const player = await upsertPlayer(id, name);
     return sendJsonResponse(res, 200, {

@@ -145,7 +145,7 @@ BEGIN
     best_accuracy = GREATEST(public.leaderboard.best_accuracy, p_accuracy),
     games_played = public.leaderboard.games_played + 1,
     last_score = p_score,
-    player_name = p_player_name,
+    player_name = COALESCE(NULLIF(TRIM(p_player_name), ''), public.leaderboard.player_name),
     day_id = p_day_id,
     updated_at = NOW(),
     last_played_at = NOW()

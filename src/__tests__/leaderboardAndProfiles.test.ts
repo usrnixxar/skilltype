@@ -6,6 +6,10 @@ import {
   createPlayerProfile,
   loadActivePlayer,
   loadAllLocalPlayers,
+  getPlayerName,
+  getPlayerId,
+  STORAGE_KEY_PLAYER_NAME,
+  STORAGE_KEY_PLAYER_ID,
 } from '../utils/playerProfile';
 import { compareLeaderboardRuns } from '../utils/leaderboardApi';
 
@@ -87,6 +91,33 @@ describe('Player Profile Management', () => {
     const profile2 = createPlayerProfile('Wingman', generateUuid());
     expect(loadActivePlayer()?.name).toBe('Wingman');
     expect(loadActivePlayer()?.id).toBe(profile2.id);
+  });
+
+  it('getPlayerName functions as the single reliable source of truth', () => {
+    // Empty state
+    expect(getPlayerName()).toBe('');
+
+    // Retrieved from localStorage
+    localStorage.setItem(STORAGE_KEY_PLAYER_NAME, 'Nisar');
+    expect(getPlayerName()).toBe('Nisar');
+
+    // Fallback if localStorage empty
+    localStorage.removeItem(STORAGE_KEY_PLAYER_NAME);
+    expect(getPlayerName('Rehan')).toBe('Rehan');
+
+    // Trims extra spaces
+    localStorage.setItem(STORAGE_KEY_PLAYER_NAME, '   Rahul Kumar   ');
+    expect(getPlayerName()).toBe('Rahul Kumar');
+  });
+
+  it('getPlayerId maintains stable UUID across sessions and never clears on reload', () => {
+    const id1 = getPlayerId();
+    expect(id1).toBeTruthy();
+
+    const id2 = getPlayerId();
+    expect(id2).toBe(id1);
+
+    expect(localStorage.getItem(STORAGE_KEY_PLAYER_ID)).toBe(id1);
   });
 });
 

@@ -2,7 +2,7 @@ import React from 'react';
 import { GameStats } from '../game/types';
 import { getTargetWPM } from '../game/WaveManager';
 import { GameMode } from '../utils/storage';
-import { PlayerProfile } from '../utils/playerProfile';
+import { PlayerProfile, getPlayerName } from '../utils/playerProfile';
 import { User, Flame, Clock, UserCheck } from 'lucide-react';
 
 interface LiveStatsPanelProps {
@@ -84,8 +84,11 @@ export const LiveStatsPanel: React.FC<LiveStatsPanelProps> = ({
         </div>
         <div className="player-meta-block">
           <div className="player-meta-label">PILOT</div>
-          <div className="player-meta-name" title={activePlayer?.name || 'Pilot'}>
-            {activePlayer?.name || 'Pilot'}
+          <div
+            className="player-meta-name"
+            title={getPlayerName(activePlayer?.name) || 'Enter Name'}
+          >
+            {getPlayerName(activePlayer?.name) || 'Enter Name'}
           </div>
         </div>
         <button

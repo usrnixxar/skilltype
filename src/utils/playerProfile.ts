@@ -97,6 +97,64 @@ export function validatePlayerName(name: string): {
 }
 
 /**
+ * Single reliable getter for current player's name across the application.
+ * Priority:
+ * 1. skilltype_player_name from localStorage
+ * 2. currentPlayerName / fallbackName passed in
+ * 3. skilltype_active_player legacy name from localStorage
+ * Standardized across project to playerName (and player_name in DB).
+ */
+export function getPlayerName(fallbackName?: string): string {
+  try {
+    if (typeof localStorage !== 'undefined') {
+      const stored = localStorage.getItem(STORAGE_KEY_PLAYER_NAME);
+      if (stored && stored.trim().length >= 2) {
+        return stored.trim();
+      }
+    }
+  } catch {}
+
+  if (fallbackName && fallbackName.trim().length >= 2) {
+    return fallbackName.trim();
+  }
+
+  try {
+    if (typeof localStorage !== 'undefined') {
+      const legacy = localStorage.getItem(STORAGE_KEY_ACTIVE_PLAYER);
+      if (legacy) {
+        const parsed = JSON.parse(legacy);
+        if (parsed?.name && typeof parsed.name === 'string' && parsed.name.trim().length >= 2) {
+          return parsed.name.trim();
+        }
+      }
+    }
+  } catch {}
+
+  return '';
+}
+
+/**
+ * Single reliable getter for current player's unique ID across the application.
+ * Reuses existing skilltype_player_id UUID in localStorage.
+ */
+export function getPlayerId(fallbackId?: string): string {
+  try {
+    if (typeof localStorage !== 'undefined') {
+      const stored = localStorage.getItem(STORAGE_KEY_PLAYER_ID);
+      if (stored && stored.trim()) {
+        return stored.trim();
+      }
+    }
+  } catch {}
+
+  if (fallbackId && fallbackId.trim()) {
+    return fallbackId.trim();
+  }
+
+  return getOrCreatePlayerId();
+}
+
+/**
  * Get the permanent player_id from localStorage, or generate a fresh UUID and store it.
  */
 export function getOrCreatePlayerId(): string {

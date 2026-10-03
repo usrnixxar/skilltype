@@ -6,6 +6,9 @@ import {
   loadAllLocalPlayers,
   saveActivePlayer,
   getOrCreatePlayerId,
+  getPlayerName,
+  STORAGE_KEY_PLAYER_NAME,
+  STORAGE_KEY_PLAYER_ID,
 } from '../utils/playerProfile';
 import { registerPlayerWithServer } from '../utils/leaderboardApi';
 import { User, Play, Users, X, Check } from 'lucide-react';
@@ -34,8 +37,9 @@ export const WelcomeModal: React.FC<WelcomeModalProps> = ({
     if (isOpen) {
       const profiles = loadAllLocalPlayers();
       setLocalProfiles(profiles);
-      if (activePlayer) {
-        setName(activePlayer.name);
+      const savedName = getPlayerName(activePlayer?.name);
+      if (savedName) {
+        setName(savedName);
       } else {
         setName('');
       }
@@ -48,18 +52,36 @@ export const WelcomeModal: React.FC<WelcomeModalProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const validation = validatePlayerName(name);
+    const playerName = name.trim();
 
-    if (!validation.valid) {
-      setError(validation.error || 'Please enter your name (2–25 characters).');
+    // Step 1 Validation
+    if (!playerName || playerName.length < 2) {
+      setError('Please enter your name');
       return;
     }
 
-    // Reuse existing player_id so the same player's scores always accumulate
-    const playerId = activePlayer?.id || getOrCreatePlayerId();
-    const profile = createPlayerProfile(validation.trimmedName, playerId);
+    const validation = validatePlayerName(playerName);
+    if (!validation.valid) {
+      setError(validation.error || 'Please enter your name');
+      return;
+    }
 
+    const validName = validation.trimmedName;
+    const playerId = activePlayer?.id || getOrCreatePlayerId();
+
+    // Step 11 Order:
+    // 1. Validate name (done above)
+    // 2. Save playerName
+    try {
+      localStorage.setItem(STORAGE_KEY_PLAYER_NAME, validName);
+      // 3. Save/generate playerId
+      localStorage.setItem(STORAGE_KEY_PLAYER_ID, playerId);
+    } catch {}
+
+    const profile = createPlayerProfile(validName, playerId);
     registerPlayerWithServer(profile.id, profile.name);
+
+    // 4. Start game
     onSavePlayerAndStart(profile);
   };
 

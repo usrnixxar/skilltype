@@ -92,7 +92,9 @@ export async function handleApiRequest(req, res) {
     // 3. Register / Update Player
     if (pathname === '/api/players' && req.method === 'POST') {
       const body = await readJsonBody(req);
-      const player = await upsertPlayer(body.id, body.name);
+      const id = body.id || body.playerId || body.player_id;
+      const name = body.name || body.playerName || body.player_name;
+      const player = await upsertPlayer(id, name);
       sendJson(res, 200, { success: true, player });
       return true;
     }

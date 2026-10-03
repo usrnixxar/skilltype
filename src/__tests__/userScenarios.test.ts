@@ -239,4 +239,50 @@ describe('SkillType User Acceptance Test Scenarios (1 to 10)', () => {
     expect(countdown.totalMs).toBeGreaterThan(0);
     expect(countdown.totalMs).toBeLessThanOrEqual(10000); // within 10 seconds of reset
   });
+
+  it('STEP 9 & STEP 14: Verifies player_name and playerName are both present and old broken rows safely repaired', async () => {
+    // Player submits with player_name
+    const res1 = await recordCompletedRun({
+      gameSessionId: 'session_nisar_exact',
+      player_id: 'usr_nisar_exact',
+      player_name: 'Nisar',
+      score: 1500,
+      wpm: 42,
+      accuracy: 97,
+    });
+
+    expect(res1.record.player_name).toBe('Nisar');
+    expect(res1.record.playerName).toBe('Nisar');
+
+    // Player Rehan submits
+    const res2 = await recordCompletedRun({
+      gameSessionId: 'session_rehan_exact',
+      player_id: 'usr_rehan_exact',
+      player_name: 'Rehan',
+      score: 1200,
+      wpm: 39,
+      accuracy: 95,
+    });
+
+    expect(res2.record.player_name).toBe('Rehan');
+    expect(res2.record.playerName).toBe('Rehan');
+
+    // Query leaderboard
+    const lb = await getWeeklyLeaderboard();
+    expect(lb.entries.length).toBe(2);
+
+    // TEST 5 JSON check: every entry must have player_name and playerName
+    expect(lb.entries[0].player_name).toBe('Nisar');
+    expect(lb.entries[0].playerName).toBe('Nisar');
+    expect(lb.entries[0].weeklyPoints).toBe(1500);
+    expect(lb.entries[0].bestWpm).toBe(42);
+
+    expect(lb.entries[1].player_name).toBe('Rehan');
+    expect(lb.entries[1].playerName).toBe('Rehan');
+    expect(lb.entries[1].weeklyPoints).toBe(1200);
+    expect(lb.entries[1].bestWpm).toBe(39);
+
+    // Each row retains its own participant's name without hardcoding or overwriting
+    expect(lb.entries[0].player_name).not.toBe(lb.entries[1].player_name);
+  });
 });

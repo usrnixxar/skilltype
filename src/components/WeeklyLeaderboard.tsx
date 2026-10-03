@@ -3,7 +3,7 @@ import {
   fetchWeeklyLeaderboard,
   LeaderboardResponse,
 } from '../utils/leaderboardApi';
-import { PlayerProfile } from '../utils/playerProfile';
+import { PlayerProfile, getPlayerName } from '../utils/playerProfile';
 import { subscribeToLeaderboardRealtime } from '../utils/supabaseClient';
 import { getTimeUntilSaturdayReset } from '../utils/dateUtils';
 import {
@@ -255,8 +255,10 @@ export const WeeklyLeaderboard: React.FC<WeeklyLeaderboardProps> = ({
                       <span className="rank-indicator">{rankBadge}</span>
                     </div>
 
-                    <div className="col-player" title={entry.playerName}>
-                      <span className="player-name-text">{entry.playerName}</span>
+                    <div className="col-player" title={entry.player_name || entry.playerName}>
+                      <span className="player-name-text">
+                        {entry.player_name || entry.playerName || (entry as any).name || 'Unnamed Player'}
+                      </span>
                       {isCurrentPlayer && <span className="you-pill">YOU</span>}
                     </div>
 
@@ -309,8 +311,11 @@ export const WeeklyLeaderboard: React.FC<WeeklyLeaderboardProps> = ({
               <div className="pinned-label">YOUR RANK</div>
               <div className="pinned-row">
                 <span className="pinned-rank">#{playerRankEntry.rank}</span>
-                <span className="pinned-name" title={playerRankEntry.playerName}>
-                  {playerRankEntry.playerName} (You)
+                <span
+                  className="pinned-name"
+                  title={playerRankEntry.player_name || playerRankEntry.playerName}
+                >
+                  {playerRankEntry.player_name || playerRankEntry.playerName || (playerRankEntry as any).name || 'Unnamed Player'} (You)
                 </span>
                 <span className="pinned-score">
                   {(activeTab === 'daily'
@@ -340,7 +345,9 @@ export const WeeklyLeaderboard: React.FC<WeeklyLeaderboardProps> = ({
               <span className="unranked-title">Awaiting first result</span>
             </div>
             <p className="unranked-subtext">
-              {activePlayer?.name || 'Pilot'}, finish a game to join the leaderboard!
+              {getPlayerName(activePlayer?.name)
+                ? `${getPlayerName(activePlayer?.name)}, finish a game to join the leaderboard!`
+                : 'Finish a game to join the leaderboard!'}
             </p>
           </div>
         )}

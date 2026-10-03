@@ -13,7 +13,10 @@ export interface LeaderboardEntry {
   id: string;
   runId?: string;
   playerId: string;
+  player_id?: string;
   playerName: string;
+  player_name?: string;
+  name?: string;
   points: number;
   weeklyPoints: number;
   dailyPoints: number;
@@ -45,7 +48,9 @@ export interface SubmitRunPayload {
   gameSessionId?: string;
   runId?: string;
   playerId: string;
+  player_id?: string;
   playerName: string;
+  player_name?: string;
   wpm: number;
   score: number;
   accuracy: number;
@@ -137,7 +142,10 @@ export async function fetchWeeklyLeaderboard(
       const targetWeekId = type === 'weekly' ? idOverride || getWeekId(now) : undefined;
       const targetDayId = type === 'daily' ? idOverride || getDayId(now) : undefined;
 
-      let query = supabase.from('leaderboard').select('*');
+      // Step 6: Fetch explicitly includes player_name
+      let query = supabase.from('leaderboard').select(
+        'id, player_id, player_name, total_points, weekly_points, daily_points, best_wpm, best_accuracy, games_played, last_score, created_at, updated_at, last_played_at, week_id, day_id'
+      );
 
       if (type === 'daily' && targetDayId) {
         query = query.eq('day_id', targetDayId).gt('daily_points', 0);
@@ -160,30 +168,36 @@ export async function fetchWeeklyLeaderboard(
         let playerRankEntry: LeaderboardEntry | null = null;
         const entries: LeaderboardEntry[] = data.map((row: any, index: number) => {
           const points = type === 'daily' ? Number(row.daily_points) : Number(row.weekly_points);
+          const safeName = (row.player_name || row.playerName || row.name || '').trim() || 'Unnamed Player';
+          const pId = row.player_id || row.playerId || '';
+
           const entry: LeaderboardEntry = {
             rank: index + 1,
             id: row.id,
             runId: row.id,
-            playerId: row.player_id,
-            playerName: row.player_name,
+            playerId: pId,
+            player_id: pId,
+            playerName: safeName,
+            player_name: safeName,
+            name: safeName,
             points,
-            weeklyPoints: Number(row.weekly_points),
-            dailyPoints: Number(row.daily_points),
-            totalPoints: Number(row.total_points),
+            weeklyPoints: Number(row.weekly_points || 0),
+            dailyPoints: Number(row.daily_points || 0),
+            totalPoints: Number(row.total_points || 0),
             score: points,
-            bestWpm: Number(row.best_wpm),
-            wpm: Number(row.best_wpm),
-            bestAccuracy: Number(row.best_accuracy),
-            accuracy: Number(row.best_accuracy),
-            gamesPlayed: Number(row.games_played),
-            lastScore: Number(row.last_score),
-            lastPlayedAt: Number(row.last_played_at),
-            completedAt: Number(row.last_played_at),
+            bestWpm: Number(row.best_wpm || 0),
+            wpm: Number(row.best_wpm || 0),
+            bestAccuracy: Number(row.best_accuracy || 0),
+            accuracy: Number(row.best_accuracy || 0),
+            gamesPlayed: Number(row.games_played || 0),
+            lastScore: Number(row.last_score || 0),
+            lastPlayedAt: Number(new Date(row.last_played_at).getTime() || row.last_played_at || 0),
+            completedAt: Number(new Date(row.last_played_at).getTime() || row.last_played_at || 0),
             weekId: row.week_id,
             dayId: row.day_id,
           };
 
-          if (playerId && row.player_id === playerId) {
+          if (playerId && (pId === playerId || row.player_id === playerId)) {
             playerRankEntry = entry;
           }
           return entry;
@@ -222,7 +236,24 @@ export async function fetchWeeklyLeaderboard(
     throw new Error(`Leaderboard fetch failed with status ${res.status}`);
   }
 
-  return (await res.json()) as LeaderboardResponse;
+  const responseJson = (await res.json()) as LeaderboardResponse;
+  if (responseJson && Array.isArray(responseJson.entries)) {
+    responseJson.entries = responseJson.entries.map((entry: any, index: number) => {
+      const safeName = (entry.player_name || entry.playerName || entry.name || '').trim() || 'Unnamed Player';
+      const pId = entry.player_id || entry.playerId || '';
+      return {
+        ...entry,
+        rank: entry.rank ?? index + 1,
+        playerId: pId,
+        player_id: pId,
+        playerName: safeName,
+        player_name: safeName,
+        name: safeName,
+      };
+    });
+  }
+
+  return responseJson;
 }
 
 /**
@@ -233,27 +264,42 @@ export async function submitGameRun(
   payload: SubmitRunPayload
 ): Promise<SubmitRunResult> {
   const sessionId = (payload.gameSessionId || payload.runId || '').trim();
-  const safeName = sanitizePlayerName(payload.playerName);
+  const rawName = payload.playerName || payload.player_name || '';
+  const safeName = sanitizePlayerName(rawName);
+  const safePlayerId = (payload.playerId || payload.player_id || '').trim();
 
   const cleanPayload = {
     ...payload,
     gameSessionId: sessionId,
     runId: sessionId,
+    playerId: safePlayerId,
+    player_id: safePlayerId,
     playerName: safeName,
+    player_name: safeName,
     score: Math.max(0, Math.round(Number(payload.score) || 0)),
     wpm: Math.max(0, Math.min(400, Math.round(Number(payload.wpm) || 0))),
     accuracy: Math.max(0, Math.min(100, Math.round(Number(payload.accuracy) || 0))),
   };
+
+  const now = Date.now();
+  const weekId = getWeekId(now);
+  const dayId = getDayId(now);
+
+  // Step 13: Temporarily log payload
+  console.log({
+    playerId: cleanPayload.playerId,
+    playerName: cleanPayload.playerName,
+    score: cleanPayload.score,
+    wpm: cleanPayload.wpm,
+    weekId,
+  });
 
   const supabase = getSupabaseClient();
 
   // 1. If Supabase client configured, attempt direct submission / RPC
   if (supabase) {
     try {
-      const now = Date.now();
-      const weekId = getWeekId(now);
-      const dayId = getDayId(now);
-
+      // First attempt: Stored RPC procedure
       const { data, error } = await supabase.rpc('submit_game_score', {
         p_session_id: sessionId,
         p_player_id: cleanPayload.playerId,
@@ -265,6 +311,9 @@ export async function submitGameRun(
         p_day_id: dayId,
       });
 
+      console.log('Leaderboard save data:', data);
+      if (error) console.log('Leaderboard save error:', error);
+
       if (!error && data) {
         return {
           success: true,
@@ -275,8 +324,95 @@ export async function submitGameRun(
           record: data.record,
         };
       }
+
+      // Step 5: Fallback to direct safe UPSERT if RPC procedure is not deployed
+      const { data: existingRows } = await supabase
+        .from('leaderboard')
+        .select('*')
+        .eq('player_id', cleanPayload.playerId)
+        .eq('week_id', weekId)
+        .limit(1);
+
+      const nowIso = new Date().toISOString();
+
+      if (existingRows && existingRows.length > 0) {
+        const existing = existingRows[0];
+        const newWeeklyPoints = Number(existing.weekly_points || 0) + cleanPayload.score;
+        const isSameDay = existing.day_id === dayId;
+        const newDailyPoints = isSameDay ? Number(existing.daily_points || 0) + cleanPayload.score : cleanPayload.score;
+        const newBestWpm = Math.max(Number(existing.best_wpm || 0), cleanPayload.wpm);
+        const newBestAcc = Math.max(Number(existing.best_accuracy || 0), cleanPayload.accuracy);
+        const newGames = Number(existing.games_played || 0) + 1;
+
+        const { data: updated, error: updateError } = await supabase
+          .from('leaderboard')
+          .update({
+            player_name: cleanPayload.playerName,
+            weekly_points: newWeeklyPoints,
+            daily_points: newDailyPoints,
+            total_points: Number(existing.total_points || 0) + cleanPayload.score,
+            best_wpm: newBestWpm,
+            best_accuracy: newBestAcc,
+            games_played: newGames,
+            last_score: cleanPayload.score,
+            day_id: dayId,
+            updated_at: nowIso,
+            last_played_at: nowIso,
+          })
+          .eq('player_id', cleanPayload.playerId)
+          .eq('week_id', weekId)
+          .select();
+
+        console.log('Leaderboard direct update data:', updated);
+        if (updateError) console.log('Leaderboard direct update error:', updateError);
+
+        if (!updateError && updated && updated.length > 0) {
+          return {
+            success: true,
+            alreadyRecorded: false,
+            sessionId,
+            runId: sessionId,
+            completedAt: now,
+            record: updated[0],
+          };
+        }
+      } else {
+        const { data: inserted, error: insertError } = await supabase
+          .from('leaderboard')
+          .insert({
+            player_id: cleanPayload.playerId,
+            player_name: cleanPayload.playerName,
+            weekly_points: cleanPayload.score,
+            daily_points: cleanPayload.score,
+            total_points: cleanPayload.score,
+            best_wpm: cleanPayload.wpm,
+            best_accuracy: cleanPayload.accuracy,
+            games_played: 1,
+            last_score: cleanPayload.score,
+            week_id: weekId,
+            day_id: dayId,
+            created_at: nowIso,
+            updated_at: nowIso,
+            last_played_at: nowIso,
+          })
+          .select();
+
+        console.log('Leaderboard direct insert data:', inserted);
+        if (insertError) console.log('Leaderboard direct insert error:', insertError);
+
+        if (!insertError && inserted && inserted.length > 0) {
+          return {
+            success: true,
+            alreadyRecorded: false,
+            sessionId,
+            runId: sessionId,
+            completedAt: now,
+            record: inserted[0],
+          };
+        }
+      }
     } catch (err) {
-      console.warn('[SubmitRun] Supabase direct RPC failed, trying API route:', err);
+      console.warn('[SubmitRun] Supabase submission failed, trying API route:', err);
     }
   }
 

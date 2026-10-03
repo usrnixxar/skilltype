@@ -238,7 +238,10 @@ export async function recordCompletedRun(runData) {
     gameSessionId,
     sessionId,
     playerId,
+    player_id,
     playerName,
+    player_name,
+    name,
     wpm,
     score,
     accuracy,
@@ -251,7 +254,8 @@ export async function recordCompletedRun(runData) {
 
   // Support runId, gameSessionId, or sessionId
   const effectiveSessionId = (gameSessionId || runId || sessionId || '').trim();
-  const safePlayerId = (playerId || '').trim();
+  const safePlayerId = (playerId || player_id || '').trim();
+  const rawPlayerName = (playerName || player_name || name || '').trim();
 
   if (!effectiveSessionId || effectiveSessionId.length > 128) {
     throw new Error('Invalid game session ID');
@@ -259,10 +263,10 @@ export async function recordCompletedRun(runData) {
   if (!safePlayerId || safePlayerId.length > 128) {
     throw new Error('Invalid player ID');
   }
-  if (typeof playerName !== 'string' || playerName.trim().length < 2 || playerName.trim().length > 25) {
+  if (rawPlayerName.length < 2 || rawPlayerName.length > 25) {
     throw new Error('Invalid player name (must be 2–25 characters)');
   }
-  const safePlayerName = sanitizePlayerName(playerName);
+  const safePlayerName = sanitizePlayerName(rawPlayerName);
   if (safePlayerName.length < 2 || safePlayerName.length > 25) {
     throw new Error('Invalid player name (must be 2–25 characters)');
   }
@@ -308,6 +312,13 @@ export async function recordCompletedRun(runData) {
     // 3. Ensure player profile
     await upsertPlayer(safePlayerId, safePlayerName);
 
+    // Step 9: Migrate old broken records for this player safely without overwriting other participants
+    await sql`
+      UPDATE leaderboard
+      SET player_name = ${safePlayerName}
+      WHERE player_id = ${safePlayerId} AND (player_name IS NULL OR player_name = '' OR player_name = 'Unnamed Player');
+    `;
+
     // 4. Safe UPSERT on leaderboard table
     const id = entryId;
     const rows = await sql`
@@ -348,7 +359,10 @@ export async function recordCompletedRun(runData) {
       record: {
         id: updatedRow.id,
         playerId: updatedRow.player_id,
+        player_id: updatedRow.player_id,
         playerName: updatedRow.player_name,
+        player_name: updatedRow.player_name,
+        name: updatedRow.player_name,
         weeklyPoints: Number(updatedRow.weekly_points),
         totalPoints: Number(updatedRow.total_points),
         dailyPoints: Number(updatedRow.daily_points),
@@ -385,6 +399,16 @@ export async function recordCompletedRun(runData) {
 
   await upsertPlayer(safePlayerId, safePlayerName);
 
+  // Step 9: In-memory safe repair of old records for this specific player
+  for (const [k, r] of memoryLeaderboard.entries()) {
+    if (r.player_id === safePlayerId && (!r.player_name || r.player_name === 'Unnamed Player')) {
+      r.player_name = safePlayerName;
+      r.playerName = safePlayerName;
+      r.name = safePlayerName;
+      memoryLeaderboard.set(k, r);
+    }
+  }
+
   const memKey = `${safePlayerId}_${currentWeekId}`;
   const existingRecord = memoryLeaderboard.get(memKey);
 
@@ -398,6 +422,8 @@ export async function recordCompletedRun(runData) {
     record = {
       ...existingRecord,
       player_name: safePlayerName,
+      playerName: safePlayerName,
+      name: safePlayerName,
       weekly_points: existingRecord.weekly_points + numScore,
       total_points: newLifetime,
       daily_points: isSameDay ? existingRecord.daily_points + numScore : numScore,
@@ -413,7 +439,10 @@ export async function recordCompletedRun(runData) {
     record = {
       id: entryId,
       player_id: safePlayerId,
+      playerId: safePlayerId,
       player_name: safePlayerName,
+      playerName: safePlayerName,
+      name: safePlayerName,
       weekly_points: numScore,
       total_points: newLifetime,
       daily_points: numScore,
@@ -440,7 +469,10 @@ export async function recordCompletedRun(runData) {
     record: {
       id: record.id,
       playerId: record.player_id,
+      player_id: record.player_id,
       playerName: record.player_name,
+      player_name: record.player_name,
+      name: record.player_name,
       weeklyPoints: record.weekly_points,
       totalPoints: record.total_points,
       dailyPoints: record.daily_points,
@@ -500,7 +532,10 @@ export async function getWeeklyLeaderboard(targetPlayerId = null, weekIdOverride
         id: row.id,
         runId: row.id, // compatibility
         playerId: row.player_id,
-        playerName: row.player_name,
+        player_id: row.player_id,
+        playerName: row.player_name || 'Unnamed Player',
+        player_name: row.player_name || 'Unnamed Player',
+        name: row.player_name || 'Unnamed Player',
         weeklyPoints: Number(row.weekly_points),
         points: Number(row.weekly_points),
         score: Number(row.weekly_points), // compatibility
@@ -547,7 +582,10 @@ export async function getWeeklyLeaderboard(targetPlayerId = null, weekIdOverride
       id: r.id,
       runId: r.id,
       playerId: r.player_id,
-      playerName: r.player_name,
+      player_id: r.player_id,
+      playerName: r.player_name || 'Unnamed Player',
+      player_name: r.player_name || 'Unnamed Player',
+      name: r.player_name || 'Unnamed Player',
       weeklyPoints: r.weekly_points,
       points: r.weekly_points,
       score: r.weekly_points,
@@ -621,7 +659,10 @@ export async function getDailyLeaderboard(targetPlayerId = null, dayIdOverride =
         id: row.id,
         runId: row.id,
         playerId: row.player_id,
-        playerName: row.player_name,
+        player_id: row.player_id,
+        playerName: row.player_name || 'Unnamed Player',
+        player_name: row.player_name || 'Unnamed Player',
+        name: row.player_name || 'Unnamed Player',
         points: Number(row.daily_points),
         dailyPoints: Number(row.daily_points),
         weeklyPoints: Number(row.weekly_points),
@@ -668,7 +709,10 @@ export async function getDailyLeaderboard(targetPlayerId = null, dayIdOverride =
       id: r.id,
       runId: r.id,
       playerId: r.player_id,
-      playerName: r.player_name,
+      player_id: r.player_id,
+      playerName: r.player_name || 'Unnamed Player',
+      player_name: r.player_name || 'Unnamed Player',
+      name: r.player_name || 'Unnamed Player',
       points: r.daily_points,
       dailyPoints: r.daily_points,
       weeklyPoints: r.weekly_points,

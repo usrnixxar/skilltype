@@ -14,6 +14,8 @@ import {
   loadActivePlayer,
   saveActivePlayer,
   generateUuid,
+  getPlayerName,
+  getPlayerId,
 } from './utils/playerProfile';
 import { submitGameRun } from './utils/leaderboardApi';
 import { getTargetWPM } from './game/WaveManager';
@@ -179,11 +181,21 @@ export const App: React.FC = () => {
         setRecords(updatedRecords);
         setModalOpen('results');
 
-        // Automatically submit run to shared persistent weekly leaderboard
-        const currentPlayer = activePlayer || loadActivePlayer();
+        // Step 2 & 3: Standardize on single name getter and identity source
+        const playerName = getPlayerName(activePlayer?.name);
+        const playerId = getPlayerId(activePlayer?.id);
+
+        console.log('Submitting leaderboard player:', playerName);
+
+        if (!playerName || playerName.length < 2) {
+          console.warn('Leaderboard save aborted: Player name is empty or missing. Prompting for player name.');
+          setWelcomeModalOpen(true);
+          return;
+        }
+
         const sessionId = activeSessionIdRef.current || generateUuid();
 
-        if (currentPlayer && (finalStats.score > 0 || finalStats.wordsCompleted > 0)) {
+        if (finalStats.score > 0 || finalStats.wordsCompleted > 0) {
           if (!submittedRunIds.current.has(sessionId)) {
             submittedRunIds.current.add(sessionId);
             setIsSavingRun(true);
@@ -192,8 +204,8 @@ export const App: React.FC = () => {
               await submitGameRun({
                 gameSessionId: sessionId,
                 runId: sessionId,
-                playerId: currentPlayer.id,
-                playerName: currentPlayer.name,
+                playerId,
+                playerName,
                 wpm: finalWpm,
                 score: finalStats.score,
                 accuracy: finalAccuracy,
