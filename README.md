@@ -153,3 +153,23 @@ npm run preview
 - **Tap-to-Type**: Integrated virtual input field enables mobile software keyboards without ghost double-typing events.
 - **Auto-Pause**: Automatically pauses gameplay if the browser tab loses visibility or the window blurs.
 - **Reduced Motion**: Setting disables canvas screen shake, reduces particle density, and calms starfield parallax.
+
+## Shared leaderboard deployment
+
+The production leaderboard uses Supabase tables plus the `submit-score` Edge Function.
+Names and scores are written together in one transaction. Session IDs make retries
+idempotent; competition dates use server time in Asia/Kolkata. Browser clients can
+read standings but cannot directly modify either scores or session records.
+
+1. Apply `supabase/schema.sql` to the intended Supabase project.
+2. Deploy `supabase/functions/submit-score/index.ts` with JWT verification enabled.
+3. Set `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` in the Vercel **Production**
+   environment, then deploy. Use the project's public legacy **anon JWT** here:
+   the Edge gateway validates this JWT. Never use a service-role/secret key in a
+   `VITE_` variable. The privileged credential stays in Supabase's Edge runtime.
+4. Verify `/api/health`, submit a named run, and check both weekly and daily standings.
+   Replaying the same session must not add points twice.
+
+This is a guest-name game, not a verified student login or anti-cheat system.
+A profile joins the shared leaderboard after its first scored game. Older results
+that were only saved in a browser are not retroactively imported.

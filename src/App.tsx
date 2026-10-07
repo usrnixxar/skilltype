@@ -17,7 +17,7 @@ import {
   getPlayerName,
   getPlayerId,
 } from './utils/playerProfile';
-import { submitGameRun } from './utils/leaderboardApi';
+import { submitGameRun, SubmitRunPayload } from './utils/leaderboardApi';
 import { getTargetWPM } from './game/WaveManager';
 import { WordCategory } from './data/wordLists';
 import soundEngine from './audio/SoundEngine';
@@ -43,6 +43,7 @@ export const App: React.FC = () => {
   const engineRef = useRef<GameEngine | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const submittedRunIds = useRef<Set<string>>(new Set());
+  const retryPayloadRef = useRef<SubmitRunPayload | null>(null);
   const activeSessionIdRef = useRef<string>(generateUuid());
 
   // Player Profile State (Guest profile remembered in localStorage)
@@ -51,7 +52,29 @@ export const App: React.FC = () => {
 
   // Leaderboard sync states
   const [isSavingRun, setIsSavingRun] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [lastSavedRunId, setLastSavedRunId] = useState<string | null>(null);
+
+  const saveLeaderboardRun = async (payload: SubmitRunPayload) => {
+    const id = payload.gameSessionId!;
+    if (submittedRunIds.current.has(id)) return;
+    submittedRunIds.current.add(id);
+    retryPayloadRef.current = payload;
+    setSaveError(null);
+    setIsSavingRun(true);
+    try {
+      await submitGameRun(payload);
+      if (retryPayloadRef.current?.gameSessionId === id) retryPayloadRef.current = null;
+      setLastSavedRunId(id);
+    } catch {
+      submittedRunIds.current.delete(id);
+      if (activeSessionIdRef.current === id) {
+        setSaveError('Your result is saved on this device, but has not reached the leaderboard. Please retry before leaving this screen.');
+      }
+    } finally {
+      if (activeSessionIdRef.current === id) setIsSavingRun(false);
+    }
+  };
 
   // Persistence State
   const [settings, setSettings] = useState<UserSettings>(loadSettings);
@@ -196,31 +219,14 @@ export const App: React.FC = () => {
         const sessionId = activeSessionIdRef.current || generateUuid();
 
         if (finalStats.score > 0 || finalStats.wordsCompleted > 0) {
-          if (!submittedRunIds.current.has(sessionId)) {
-            submittedRunIds.current.add(sessionId);
-            setIsSavingRun(true);
-
-            try {
-              await submitGameRun({
-                gameSessionId: sessionId,
-                runId: sessionId,
-                playerId,
-                playerName,
-                wpm: finalWpm,
-                score: finalStats.score,
-                accuracy: finalAccuracy,
-                wave: finalStats.wave,
-                wordsCompleted: finalStats.wordsCompleted,
-                durationSeconds: Math.floor(finalStats.activePlayTimeMs / 1000),
-              });
-              setLastSavedRunId(sessionId);
-            } catch (err) {
-              console.error('Failed to submit run to shared leaderboard:', err);
-            } finally {
-              setIsSavingRun(false);
-            }
-          }
+          await saveLeaderboardRun({
+            gameSessionId: sessionId, runId: sessionId, playerId, playerName,
+            wpm: finalWpm, score: finalStats.score, accuracy: finalAccuracy,
+            wave: finalStats.wave, wordsCompleted: finalStats.wordsCompleted,
+            durationSeconds: Math.floor(finalStats.activePlayTimeMs / 1000),
+          });
         }
+
       },
     });
 
@@ -316,6 +322,9 @@ export const App: React.FC = () => {
     }
 
     activeSessionIdRef.current = generateUuid();
+    setSaveError(null);
+    setIsSavingRun(false);
+    retryPayloadRef.current = null;
     setCurrentMode('arcade');
     setAppState('gameplay');
     setModalOpen('none');
@@ -346,6 +355,9 @@ export const App: React.FC = () => {
     }
 
     activeSessionIdRef.current = generateUuid();
+    setSaveError(null);
+    setIsSavingRun(false);
+    retryPayloadRef.current = null;
     setCurrentMode('practice');
     setAppState('gameplay');
     setModalOpen('none');
@@ -384,6 +396,9 @@ export const App: React.FC = () => {
 
   const handleRestart = () => {
     activeSessionIdRef.current = generateUuid();
+    setSaveError(null);
+    setIsSavingRun(false);
+    retryPayloadRef.current = null;
     setModalOpen('none');
     if (engineRef.current) {
       engineRef.current.startGame();
@@ -545,6 +560,9 @@ export const App: React.FC = () => {
             />
 
             <ResultsModal
+              isSavingRun={isSavingRun}
+              saveError={saveError}
+              onRetrySave={() => { if (retryPayloadRef.current) void saveLeaderboardRun(retryPayloadRef.current); }}
               isOpen={modalOpen === 'results'}
               stats={stats}
               mode={currentMode}

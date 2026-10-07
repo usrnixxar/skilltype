@@ -4,6 +4,9 @@ import { Difficulty, GameMode } from '../utils/storage';
 
 interface ResultsModalProps {
   isOpen: boolean;
+  isSavingRun?: boolean;
+  saveError?: string | null;
+  onRetrySave?: () => void;
   stats: GameStats;
   mode: GameMode;
   difficulty: Difficulty;
@@ -14,6 +17,9 @@ interface ResultsModalProps {
 
 export const ResultsModal: React.FC<ResultsModalProps> = ({
   isOpen,
+  isSavingRun = false,
+  saveError,
+  onRetrySave,
   stats,
   mode,
   difficulty,
@@ -71,6 +77,16 @@ export const ResultsModal: React.FC<ResultsModalProps> = ({
           <span className="results-score-label">FINAL SCORE</span>
           <div className="results-score-number">{stats.score.toLocaleString()}</div>
         </div>
+
+        {isSavingRun && <p role="status">Saving your leaderboard score…</p>}
+        {saveError && (
+          <div role="alert">
+            <p>{saveError}</p>
+            <button className="btn btn-secondary" onClick={onRetrySave} disabled={isSavingRun}>
+              Retry leaderboard save
+            </button>
+          </div>
+        )}
 
         {/* Core Metrics Grid */}
         <div className="results-metrics-grid">

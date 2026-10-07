@@ -70,42 +70,6 @@ export interface SubmitRunResult {
 }
 
 /**
- * Repair a leaderboard row's player_name for one specific player/week only.
- * This is intentionally scoped by player_id + week_id so one participant's
- * name can never overwrite another participant's row.
- */
-async function repairCurrentPlayerName(
-  playerId: string,
-  playerName: string,
-  weekId: string
-): Promise<void> {
-  const safePlayerId = String(playerId || '').trim();
-  const safeName = sanitizePlayerName(String(playerName || ''));
-
-  if (!safePlayerId || safeName.length < 2 || !weekId) return;
-
-  const supabase = getSupabaseClient();
-  if (!supabase) return;
-
-  try {
-    const { error } = await supabase
-      .from('leaderboard')
-      .update({
-        player_name: safeName,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('player_id', safePlayerId)
-      .eq('week_id', weekId);
-
-    if (error) {
-      console.warn('[Leaderboard] Could not repair player name:', error.message || error);
-    }
-  } catch (err) {
-    console.warn('[Leaderboard] Player-name repair failed:', err);
-  }
-}
-
-/**
  * Compare two leaderboard entries according to official SkillType weekly leaderboard ranking rules:
  * 1. Highest Points first (weekly_points or score)
  * 2. If Points tie -> highest Best WPM
@@ -239,33 +203,6 @@ export async function fetchWeeklyLeaderboard(
           return entry;
         });
 
-        // Self-heal legacy/current-player rows that were previously saved
-        // without a display name. This only repairs the active player's row.
-        if (playerId && targetWeekId) {
-          try {
-            const { getPlayerName } = await import('./playerProfile');
-            const localName = getPlayerName();
-            const currentRow = entries.find((entry) => entry.playerId === playerId);
-            if (
-              currentRow &&
-              localName &&
-              localName.length >= 2 &&
-              (!currentRow.playerName ||
-                currentRow.playerName === 'Unnamed Player')
-            ) {
-              await repairCurrentPlayerName(playerId, localName, targetWeekId);
-              currentRow.playerName = localName;
-              currentRow.player_name = localName;
-              currentRow.name = localName;
-              // Reuse the already-repaired entry as the current player's rank
-              // instead of mutating a closure-assigned nullable variable.
-              playerRankEntry = currentRow;
-            }
-          } catch (repairErr) {
-            console.warn('[Leaderboard] Self-heal skipped:', repairErr);
-          }
-        }
-
         return {
           entries,
           totalEligible: entries.length,
@@ -345,174 +282,24 @@ export async function submitGameRun(
   };
 
   const now = Date.now();
-  const weekId = getWeekId(now);
-  const dayId = getDayId(now);
-
-  // Step 13: Temporarily log payload
-  console.log({
-    playerId: cleanPayload.playerId,
-    playerName: cleanPayload.playerName,
-    score: cleanPayload.score,
-    wpm: cleanPayload.wpm,
-    weekId,
-  });
 
   const supabase = getSupabaseClient();
-
-  // 1. If Supabase client configured, attempt direct submission / RPC
   if (supabase) {
-    try {
-      // First attempt: Stored RPC procedure
-      const { data, error } = await supabase.rpc('submit_game_score', {
-        p_session_id: sessionId,
-        p_player_id: cleanPayload.playerId,
-        p_player_name: cleanPayload.playerName,
-        p_score: cleanPayload.score,
-        p_wpm: cleanPayload.wpm,
-        p_accuracy: cleanPayload.accuracy,
-        p_week_id: weekId,
-        p_day_id: dayId,
-      });
-
-      console.log('Leaderboard save data:', data);
-      if (error) console.log('Leaderboard save error:', error);
-
-      if (!error && data) {
-        // Important: older deployed RPC versions may successfully save score
-        // while leaving player_name blank/old. Always repair the specific
-        // current player's current-week row before returning success.
-        await repairCurrentPlayerName(
-          cleanPayload.playerId,
-          cleanPayload.playerName,
-          weekId
-        );
-
-        return {
-          success: true,
-          alreadyRecorded: Boolean(data.alreadyRecorded),
-          sessionId,
-          runId: sessionId,
-          completedAt: now,
-          record: data.record
-            ? {
-                ...data.record,
-                player_name: cleanPayload.playerName,
-                playerName: cleanPayload.playerName,
-                name: cleanPayload.playerName,
-              }
-            : data.record,
-        };
-      }
-
-      // Step 5: Fallback to direct safe UPSERT if RPC procedure is not deployed
-      const { data: existingRows } = await supabase
-        .from('leaderboard')
-        .select('*')
-        .eq('player_id', cleanPayload.playerId)
-        .eq('week_id', weekId)
-        .limit(1);
-
-      const nowIso = new Date().toISOString();
-
-      if (existingRows && existingRows.length > 0) {
-        const existing = existingRows[0];
-        const newWeeklyPoints = Number(existing.weekly_points || 0) + cleanPayload.score;
-        const isSameDay = existing.day_id === dayId;
-        const newDailyPoints = isSameDay ? Number(existing.daily_points || 0) + cleanPayload.score : cleanPayload.score;
-        const newBestWpm = Math.max(Number(existing.best_wpm || 0), cleanPayload.wpm);
-        const newBestAcc = Math.max(Number(existing.best_accuracy || 0), cleanPayload.accuracy);
-        const newGames = Number(existing.games_played || 0) + 1;
-
-        const { data: updated, error: updateError } = await supabase
-          .from('leaderboard')
-          .update({
-            player_name: cleanPayload.playerName,
-            weekly_points: newWeeklyPoints,
-            daily_points: newDailyPoints,
-            total_points: Number(existing.total_points || 0) + cleanPayload.score,
-            best_wpm: newBestWpm,
-            best_accuracy: newBestAcc,
-            games_played: newGames,
-            last_score: cleanPayload.score,
-            day_id: dayId,
-            updated_at: nowIso,
-            last_played_at: nowIso,
-          })
-          .eq('player_id', cleanPayload.playerId)
-          .eq('week_id', weekId)
-          .select();
-
-        console.log('Leaderboard direct update data:', updated);
-        if (updateError) console.log('Leaderboard direct update error:', updateError);
-
-        if (!updateError && updated && updated.length > 0) {
-          await repairCurrentPlayerName(
-            cleanPayload.playerId,
-            cleanPayload.playerName,
-            weekId
-          );
-          return {
-            success: true,
-            alreadyRecorded: false,
-            sessionId,
-            runId: sessionId,
-            completedAt: now,
-            record: {
-              ...updated[0],
-              player_name: cleanPayload.playerName,
-              playerName: cleanPayload.playerName,
-              name: cleanPayload.playerName,
-            },
-          };
-        }
-      } else {
-        const { data: inserted, error: insertError } = await supabase
-          .from('leaderboard')
-          .insert({
-            player_id: cleanPayload.playerId,
-            player_name: cleanPayload.playerName,
-            weekly_points: cleanPayload.score,
-            daily_points: cleanPayload.score,
-            total_points: cleanPayload.score,
-            best_wpm: cleanPayload.wpm,
-            best_accuracy: cleanPayload.accuracy,
-            games_played: 1,
-            last_score: cleanPayload.score,
-            week_id: weekId,
-            day_id: dayId,
-            created_at: nowIso,
-            updated_at: nowIso,
-            last_played_at: nowIso,
-          })
-          .select();
-
-        console.log('Leaderboard direct insert data:', inserted);
-        if (insertError) console.log('Leaderboard direct insert error:', insertError);
-
-        if (!insertError && inserted && inserted.length > 0) {
-          await repairCurrentPlayerName(
-            cleanPayload.playerId,
-            cleanPayload.playerName,
-            weekId
-          );
-          return {
-            success: true,
-            alreadyRecorded: false,
-            sessionId,
-            runId: sessionId,
-            completedAt: now,
-            record: {
-              ...inserted[0],
-              player_name: cleanPayload.playerName,
-              playerName: cleanPayload.playerName,
-              name: cleanPayload.playerName,
-            },
-          };
-        }
-      }
-    } catch (err) {
-      console.warn('[SubmitRun] Supabase submission failed, trying API route:', err);
+    // The Edge Function validates guest scores, then commits the name and
+    // score atomically. Never fall back to unrestricted browser table writes.
+    const { data, error } = await supabase.functions.invoke('submit-score', {
+      body: cleanPayload,
+    });
+    if (error || data?.success !== true) {
+      throw new Error(data?.error || 'Could not save your leaderboard score. Please retry.');
     }
+    return {
+      ...data,
+      success: true,
+      sessionId,
+      runId: sessionId,
+      completedAt: data.completedAt || now,
+    };
   }
 
   // 2. Submit to Backend API
@@ -530,7 +317,9 @@ export async function submitGameRun(
     throw new Error(errBody.error || `Run submission failed with status ${res.status}`);
   }
 
-  return (await res.json()) as SubmitRunResult;
+  const result = (await res.json()) as SubmitRunResult;
+  if (result.success !== true) throw new Error(result.error || 'Score was not saved.');
+  return result;
 }
 
 /**
@@ -543,15 +332,8 @@ export async function registerPlayerWithServer(
   const safeName = sanitizePlayerName(name);
   if (!id || safeName.length < 2) return;
 
-  try {
-    const supabase = getSupabaseClient();
-    if (supabase) {
-      const now = Date.now();
-      await supabase
-        .from('players')
-        .upsert({ id, name: safeName, created_at: now, last_seen_at: now });
-    }
-  } catch {}
+  // Supabase persists the profile together with the first completed run.
+  if (getSupabaseClient()) return;
 
   try {
     await fetch('/api/players', {

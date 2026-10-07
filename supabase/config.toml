@@ -1,0 +1,2 @@
+[functions.submit-score]
+verify_jwt = true

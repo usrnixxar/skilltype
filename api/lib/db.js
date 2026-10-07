@@ -1,4 +1,5 @@
 import 'dotenv/config';
+import { isSupabaseBackendConfigured, submitSupabaseRun, fetchSupabaseLeaderboard } from './supabase.js';
 import { neon } from '@neondatabase/serverless';
 import { getKolkataComponents, getDayId, getWeekId } from './dateUtils.js';
 
@@ -103,7 +104,7 @@ function getConnectionString() {
 }
 
 export function isCloudDatabaseConfigured() {
-  return Boolean(getConnectionString());
+  return isSupabaseBackendConfigured() || Boolean(getConnectionString());
 }
 
 function getSqlClient() {
@@ -193,6 +194,8 @@ export async function upsertPlayer(id, name) {
   }
 
   const now = Date.now();
+  // The guest profile is committed atomically with the first score on Supabase.
+  if (isSupabaseBackendConfigured()) return { id: safeId, name: safeName, createdAt: now, lastSeenAt: now };
   const sql = getSqlClient();
 
   if (sql) {
@@ -292,6 +295,12 @@ export async function recordCompletedRun(runData) {
   const currentWeekId = explicitWeekId || getWeekId(serverTime);
   const currentDayId = explicitDayId || getDayId(serverTime);
   const entryId = effectiveSessionId || generateUuid();
+  if (isSupabaseBackendConfigured()) {
+    return submitSupabaseRun({
+      gameSessionId: effectiveSessionId, playerId: safePlayerId, playerName: safePlayerName,
+      score: numScore, wpm: numWpm, accuracy: numAccuracy,
+    });
+  }
 
   const sql = getSqlClient();
 
@@ -505,6 +514,7 @@ export async function recordCompletedRun(runData) {
  * 4. Earlier achieved first (last_played_at ASC)
  */
 export async function getWeeklyLeaderboard(targetPlayerId = null, weekIdOverride = null) {
+  if (isSupabaseBackendConfigured()) return fetchSupabaseLeaderboard(targetPlayerId, 'weekly', weekIdOverride);
   const now = Date.now();
   const currentWeekId = weekIdOverride || getWeekId(now);
   const sql = getSqlClient();
@@ -632,6 +642,7 @@ export async function getWeeklyLeaderboard(targetPlayerId = null, weekIdOverride
  * Fetch daily leaderboard participants for current calendar day in Asia/Kolkata.
  */
 export async function getDailyLeaderboard(targetPlayerId = null, dayIdOverride = null) {
+  if (isSupabaseBackendConfigured()) return fetchSupabaseLeaderboard(targetPlayerId, 'daily', dayIdOverride);
   const now = Date.now();
   const currentDayId = dayIdOverride || getDayId(now);
   const sql = getSqlClient();
