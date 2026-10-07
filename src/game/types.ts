@@ -24,9 +24,11 @@ export interface Enemy {
   swayAmplitude: number;
   baseX: number;
   isDead: boolean;
+  hitPauseRemaining?: number;
 }
 
 export interface Laser {
+  targetEnemyId?: string;
   id: string;
   startX: number;
   startY: number;

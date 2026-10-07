@@ -20,13 +20,8 @@ Deno.serve(async (req: Request) => {
     if (raw.length > 8192) return reply({ error: 'Score payload too large' }, 413);
     const body = JSON.parse(raw);
     const sessionId = body.gameSessionId || body.runId;
-    const playerId = body.playerId;
-    const playerName = typeof body.playerName === 'string'
-      ? body.playerName.replace(/<[^>]*>?/gm, '').replace(/[\x00-\x1F\x7F]/g, '').trim()
-      : '';
     if (typeof sessionId !== 'string' || !/^[\w-]{1,128}$/.test(sessionId) ||
-        typeof playerId !== 'string' || !/^[\w-]{1,128}$/.test(playerId) ||
-        playerName.length < 2 || playerName.length > 25 ||
+        typeof body.sessionToken !== 'string' || !/^[a-f0-9]{64}$/.test(body.sessionToken) ||
         !Number.isInteger(body.score) || body.score < 0 || body.score > 10000000 ||
         !Number.isFinite(body.wpm) || body.wpm < 0 || body.wpm > 400 ||
         !Number.isFinite(body.accuracy) || body.accuracy < 0 || body.accuracy > 100) {
@@ -35,13 +30,13 @@ Deno.serve(async (req: Request) => {
     const admin = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, {
       auth: { persistSession: false, autoRefreshToken: false },
     });
-    const { data, error } = await admin.rpc('submit_game_score', {
-      p_session_id: sessionId, p_player_id: playerId, p_player_name: playerName,
+    const { data, error } = await admin.rpc('submit_session_score', {
+      p_session_id: sessionId, p_hash: Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(body.sessionToken))), b => b.toString(16).padStart(2, '0')).join(''),
       p_score: body.score, p_wpm: body.wpm, p_accuracy: body.accuracy,
     });
     if (error) {
       console.error('Score transaction failed', error.code);
-      return reply({ error: 'Score could not be saved. Please retry.' }, error.code === '22023' ? 400 : 503);
+      return reply({ error: error.code === '28000' ? 'Session expired. Log out and log in again.' : 'Score could not be saved. Please retry.' }, error.code === '28000' ? 401 : error.code === '22023' ? 400 : 503);
     }
     return reply(data);
   } catch (error) {

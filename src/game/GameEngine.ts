@@ -430,6 +430,7 @@ export class GameEngine {
 
     this.lasers.push({
       id: `laser_${Date.now()}_${Math.random()}`,
+      targetEnemyId: target.id,
       startX,
       startY,
       targetX: target.x,
@@ -528,11 +529,14 @@ export class GameEngine {
     // 6. Update Lasers
     for (let i = this.lasers.length - 1; i >= 0; i--) {
       const laser = this.lasers[i];
+      const movingTarget = this.enemyManager.getEnemies().find(enemy => enemy.id === laser.targetEnemyId && !enemy.isDead);
+      if (movingTarget) { laser.targetX = movingTarget.x; laser.targetY = movingTarget.y; }
       laser.progress += laser.speed * dt;
       laser.x = laser.startX + (laser.targetX - laser.startX) * laser.progress;
       laser.y = laser.startY + (laser.targetY - laser.startY) * laser.progress;
 
       if (laser.progress >= 1) {
+        if (laser.targetEnemyId) this.enemyManager.applyBulletHit(laser.targetEnemyId);
         this.lasers.splice(i, 1);
       }
     }

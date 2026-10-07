@@ -1,2 +1,5 @@
 [functions.submit-score]
 verify_jwt = true
+
+[functions.player-session]
+verify_jwt = true

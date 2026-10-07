@@ -297,7 +297,7 @@ export async function recordCompletedRun(runData) {
   const entryId = effectiveSessionId || generateUuid();
   if (isSupabaseBackendConfigured()) {
     return submitSupabaseRun({
-      gameSessionId: effectiveSessionId, playerId: safePlayerId, playerName: safePlayerName,
+      gameSessionId: effectiveSessionId, playerId: safePlayerId, playerName: safePlayerName, sessionToken: runData.sessionToken,
       score: numScore, wpm: numWpm, accuracy: numAccuracy,
     });
   }

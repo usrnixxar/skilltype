@@ -1,5 +1,7 @@
 // @ts-nocheck
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+// These are in-memory unit tests; never send fixture scores to a live project.
+vi.mock('../../api/lib/supabase.js', () => ({ isSupabaseBackendConfigured: () => false, submitSupabaseRun: vi.fn(), fetchSupabaseLeaderboard: vi.fn() }));
 import {
   recordCompletedRun,
   getWeeklyLeaderboard,

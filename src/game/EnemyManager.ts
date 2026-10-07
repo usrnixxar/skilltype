@@ -16,6 +16,14 @@ export class EnemyManager {
     this.enemies = [];
   }
 
+  /** Per-impact feedback; no global speed or spawn changes. */
+  public applyBulletHit(enemyId: string): void {
+    const enemy = this.enemies.find(item => item.id === enemyId && !item.isDead);
+    if (!enemy) return;
+    enemy.hitPauseRemaining = 0.075;
+    enemy.y = Math.max(-40, enemy.y - 2);
+  }
+
   /**
    * Spawns an enemy of the specified type, selecting an appropriate word.
    * Prefers unique starting letters compared to currently active enemies.
@@ -136,12 +144,15 @@ export class EnemyManager {
         continue;
       }
 
-      // Movement
-      enemy.y += enemy.vy * dt;
+      const paused = Math.min(dt, enemy.hitPauseRemaining || 0);
+      enemy.hitPauseRemaining = Math.max(0, (enemy.hitPauseRemaining || 0) - dt);
+      const movementDt = dt - paused;
+      // Only this enemy pauses. Consume leftover frame time for smooth resumption.
+      enemy.y += enemy.vy * movementDt;
 
       // Lateral sway for fighters
       if (enemy.swayAmplitude > 0) {
-        enemy.swayPhase += enemy.swaySpeed * dt;
+        enemy.swayPhase += enemy.swaySpeed * movementDt;
         const newX = enemy.baseX + Math.sin(enemy.swayPhase) * enemy.swayAmplitude;
 
         // Keep label inside playfield

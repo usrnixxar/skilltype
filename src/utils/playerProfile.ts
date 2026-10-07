@@ -13,6 +13,9 @@ export interface PlayerProfile {
   id: string;
   name: string;
   createdAt: number;
+  kind?: 'student' | 'guest';
+  pin?: string | null;
+  sessionToken?: string;
 }
 
 export const STORAGE_KEY_PLAYER_ID = 'skilltype_player_id';
@@ -191,43 +194,24 @@ export function getOrCreatePlayerId(): string {
  */
 export function loadActivePlayer(): PlayerProfile | null {
   try {
-    const storedId = localStorage.getItem(STORAGE_KEY_PLAYER_ID);
-    const storedName = localStorage.getItem(STORAGE_KEY_PLAYER_NAME);
-
-    if (storedName && storedName.trim()) {
-      const validation = validatePlayerName(storedName);
-      if (validation.valid) {
-        const id = storedId && storedId.trim() ? storedId.trim() : getOrCreatePlayerId();
-        return {
-          id,
-          name: validation.trimmedName,
-          createdAt: Date.now(),
-        };
-      }
-    }
-
-    // Legacy check
-    const raw = localStorage.getItem(STORAGE_KEY_ACTIVE_PLAYER);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (parsed && typeof parsed.name === 'string') {
-        const validation = validatePlayerName(parsed.name);
-        if (validation.valid) {
-          const id = parsed.id && typeof parsed.id === 'string' ? parsed.id : getOrCreatePlayerId();
-          localStorage.setItem(STORAGE_KEY_PLAYER_ID, id);
-          localStorage.setItem(STORAGE_KEY_PLAYER_NAME, validation.trimmedName);
-          return {
-            id,
-            name: validation.trimmedName,
-            createdAt: Number(parsed.createdAt) || Date.now(),
-          };
-        }
-      }
-    }
-  } catch (err) {
-    console.warn('Failed to load active player profile:', err);
-  }
+    const profile = JSON.parse(localStorage.getItem(STORAGE_KEY_ACTIVE_PLAYER) || 'null');
+    if (profile && typeof profile.id === 'string' && typeof profile.name === 'string' &&
+        ['student', 'guest'].includes(profile.kind) && /^[a-f0-9]{64}$/.test(profile.sessionToken)) return profile;
+  } catch {}
   return null;
+}
+
+export function clearActivePlayer(): void {
+  for (const key of [STORAGE_KEY_ACTIVE_PLAYER, STORAGE_KEY_PLAYER_ID, STORAGE_KEY_PLAYER_NAME, STORAGE_KEY_ALL_PLAYERS]) {
+    localStorage.removeItem(key);
+  }
+}
+
+export function maskPlayerName(name: string): string {
+  return name.trim().split(/\s+/).map(word => {
+    const chars = Array.from(word);
+    return chars.length <= 2 ? (chars[0] || '') + '*' : chars[0] + '*'.repeat(chars.length - 2) + chars[chars.length - 1];
+  }).join(' ');
 }
 
 /**
@@ -235,6 +219,8 @@ export function loadActivePlayer(): PlayerProfile | null {
  * Stores under skilltype_player_id, skilltype_player_name, and skilltype_active_player.
  */
 export function saveActivePlayer(profile: PlayerProfile): void {
+  const current = loadActivePlayer();
+  if (current && current.sessionToken !== profile.sessionToken) throw new Error('Log out before changing profile.');
   try {
     const validation = validatePlayerName(profile.name);
     const safeName = validation.trimmedName || profile.name.trim();
@@ -246,17 +232,7 @@ export function saveActivePlayer(profile: PlayerProfile): void {
       JSON.stringify({ ...profile, name: safeName })
     );
 
-    // Keep recent local profiles for switching on shared computers
-    const all = loadAllLocalPlayers();
-    const existingIndex = all.findIndex((p) => p.id === profile.id);
-    const updatedProfile = { ...profile, name: safeName };
-
-    if (existingIndex >= 0) {
-      all[existingIndex] = updatedProfile;
-    } else {
-      all.unshift(updatedProfile);
-    }
-    localStorage.setItem(STORAGE_KEY_ALL_PLAYERS, JSON.stringify(all.slice(0, 20)));
+    localStorage.removeItem(STORAGE_KEY_ALL_PLAYERS);
   } catch (err) {
     console.warn('Failed to persist active player profile:', err);
   }

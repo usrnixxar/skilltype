@@ -3,7 +3,9 @@ import {
   validatePlayerName,
   generatePlayerId,
   generateUuid,
-  createPlayerProfile,
+  saveActivePlayer,
+  clearActivePlayer,
+  maskPlayerName,
   loadActivePlayer,
   loadAllLocalPlayers,
   getPlayerName,
@@ -64,33 +66,27 @@ describe('Player Profile Management', () => {
     expect(id1).not.toBe(id2);
   });
 
-  it('distinct profiles with explicit IDs never merge on shared computers', () => {
-    const id1 = generateUuid();
-    const id2 = generateUuid();
-    const p1 = createPlayerProfile('Alex', id1);
-    const p2 = createPlayerProfile('Alex', id2);
-
-    expect(p1.name).toBe('Alex');
-    expect(p2.name).toBe('Alex');
-    expect(p1.id).not.toBe(p2.id);
-
-    const all = loadAllLocalPlayers();
-    expect(all.length).toBe(2);
-    expect(all[0].id).toBe(p2.id);
-    expect(all[1].id).toBe(p1.id);
-  });
-
-  it('saves and loads active player profile', () => {
+  it('requires logout before switching profiles and stores no switch list', () => {
+    const one = { id: generateUuid(), name: 'A**x', kind: 'guest' as const, sessionToken: 'a'.repeat(64), createdAt: Date.now() };
+    const two = { ...one, id: generateUuid(), sessionToken: 'b'.repeat(64) };
+    saveActivePlayer(one);
+    expect(loadActivePlayer()?.id).toBe(one.id);
+    expect(() => saveActivePlayer(two)).toThrow('Log out');
+    expect(loadAllLocalPlayers()).toEqual([]);
+    clearActivePlayer();
     expect(loadActivePlayer()).toBeNull();
-
-    const profile = createPlayerProfile('Starfighter');
-    expect(loadActivePlayer()?.name).toBe('Starfighter');
-    expect(loadActivePlayer()?.id).toBe(profile.id);
-
-    // Switching active player
-    const profile2 = createPlayerProfile('Wingman', generateUuid());
-    expect(loadActivePlayer()?.name).toBe('Wingman');
-    expect(loadActivePlayer()?.id).toBe(profile2.id);
+    saveActivePlayer(two);
+    expect(loadActivePlayer()?.id).toBe(two.id);
+  });
+  it('requires old profiles to log in again', () => {
+    localStorage.setItem(STORAGE_KEY_PLAYER_NAME, 'Old Name');
+    localStorage.setItem(STORAGE_KEY_PLAYER_ID, generateUuid());
+    expect(loadActivePlayer()).toBeNull();
+  });
+  it('masks every name part without revealing short names', () => {
+    expect(maskPlayerName('Nisar Ansari')).toBe('N***r A****i');
+    expect(maskPlayerName('Md Nisar')).toBe('M* N***r');
+    expect(maskPlayerName('N***r A****i')).toBe('N***r A****i');
   });
 
   it('getPlayerName functions as the single reliable source of truth', () => {

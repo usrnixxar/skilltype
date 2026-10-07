@@ -39,6 +39,7 @@ export async function fetchSupabaseLeaderboard(playerId, type, override) {
   const { data, error } = await query;
   if (error) throw new Error('Leaderboard is temporarily unavailable.');
   const entries = data.map((row, index) => ({
+    playerType: row.player_type, studentPin: row.student_pin,
     rank: index + 1, id: row.id, runId: row.id,
     playerId: row.player_id, player_id: row.player_id,
     playerName: row.player_name, player_name: row.player_name, name: row.player_name,

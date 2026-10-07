@@ -14,8 +14,6 @@ import {
   loadActivePlayer,
   saveActivePlayer,
   generateUuid,
-  getPlayerName,
-  getPlayerId,
 } from './utils/playerProfile';
 import { submitGameRun, SubmitRunPayload } from './utils/leaderboardApi';
 import { getTargetWPM } from './game/WaveManager';
@@ -36,6 +34,7 @@ import { SettingsModal } from './components/SettingsModal';
 import { MobileInputHelper } from './components/MobileInputHelper';
 import { LiveStatsPanel } from './components/LiveStatsPanel';
 import { WeeklyLeaderboard } from './components/WeeklyLeaderboard';
+import { logoutPlayer } from './utils/playerSession';
 import { WelcomeModal } from './components/WelcomeModal';
 
 export const App: React.FC = () => {
@@ -50,6 +49,35 @@ export const App: React.FC = () => {
   // Player Profile State (Guest profile remembered in localStorage)
   const [activePlayer, setActivePlayer] = useState<PlayerProfile | null>(loadActivePlayer);
   const [welcomeModalOpen, setWelcomeModalOpen] = useState(false);
+
+  const [logoutError, setLogoutError] = useState('');
+  const [loggingOut, setLoggingOut] = useState(false);
+  const handleLogout = async () => {
+    if (!activePlayer || loggingOut) return;
+    engineRef.current?.pause();
+    setLoggingOut(true); setLogoutError('');
+    try {
+      await logoutPlayer(activePlayer);
+      pendingProfileStartRef.current = null;
+      retryPayloadRef.current = null;
+      activeSessionIdRef.current = generateUuid();
+      setActivePlayer(null); setAppState('menu'); setModalOpen('none');
+      setSaveError(null); setIsSavingRun(false); setWelcomeModalOpen(true);
+    } catch (error) { setLogoutError(error instanceof Error ? error.message : 'Logout failed. Please retry.'); }
+    finally { setLoggingOut(false); }
+  };
+  useEffect(() => {
+    const syncProfile = (event: StorageEvent) => {
+      if (event.key !== 'skilltype_active_player' && event.key !== null) return;
+      engineRef.current?.reset();
+      pendingProfileStartRef.current = null; retryPayloadRef.current = null;
+      activeSessionIdRef.current = generateUuid();
+      setActivePlayer(loadActivePlayer()); setAppState('menu'); setModalOpen('none');
+      setSaveError(null); setIsSavingRun(false); setWelcomeModalOpen(false);
+    };
+    window.addEventListener('storage', syncProfile);
+    return () => window.removeEventListener('storage', syncProfile);
+  }, []);
 
   // Leaderboard sync states
   const [isSavingRun, setIsSavingRun] = useState(false);
@@ -206,10 +234,10 @@ export const App: React.FC = () => {
         setModalOpen('results');
 
         // Step 2 & 3: Standardize on single name getter and identity source
-        const playerName = getPlayerName(activePlayer?.name);
-        const playerId = getPlayerId(activePlayer?.id);
+        const playerName = activePlayer?.name || "";
+        const playerId = activePlayer?.id || "";
 
-        console.log('Submitting leaderboard player:', playerName);
+
 
         if (!playerName || playerName.length < 2) {
           console.warn('Leaderboard save aborted: Player name is empty or missing. Prompting for player name.');
@@ -221,7 +249,7 @@ export const App: React.FC = () => {
 
         if (finalStats.score > 0 || finalStats.wordsCompleted > 0) {
           await saveLeaderboardRun({
-            gameSessionId: sessionId, runId: sessionId, playerId, playerName,
+            gameSessionId: sessionId, runId: sessionId, playerId, playerName, sessionToken: activePlayer?.sessionToken,
             wpm: finalWpm, score: finalStats.score, accuracy: finalAccuracy,
             wave: finalStats.wave, wordsCompleted: finalStats.wordsCompleted,
             durationSeconds: Math.floor(finalStats.activePlayTimeMs / 1000),
@@ -451,7 +479,7 @@ export const App: React.FC = () => {
               engineRef.current ? engineRef.current.getPracticeTimeRemainingMs() : 0
             }
             isRelaxed={settings.practiceRelaxed}
-            onChangePlayer={() => setWelcomeModalOpen(true)}
+            onChangePlayer={handleLogout}
             isPlaying={appState === 'gameplay' && engineState === 'playing'}
           />
         </aside>
@@ -598,6 +626,7 @@ export const App: React.FC = () => {
         </aside>
       </div>
 
+      {logoutError && <div className="session-error" role="alert">{logoutError}</div>}
       {/* Name Entry Welcome & Profile Switching Screen */}
       <WelcomeModal
         isOpen={welcomeModalOpen || !activePlayer}

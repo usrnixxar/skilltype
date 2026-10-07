@@ -1,18 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import {
-  PlayerProfile,
-  validatePlayerName,
-  createPlayerProfile,
-  loadAllLocalPlayers,
-  saveActivePlayer,
-  getOrCreatePlayerId,
-  getPlayerName,
-  STORAGE_KEY_PLAYER_NAME,
-  STORAGE_KEY_PLAYER_ID,
-} from '../utils/playerProfile';
-import { registerPlayerWithServer } from '../utils/leaderboardApi';
-import { User, Play, Users, X, Check } from 'lucide-react';
-
+import { PlayerProfile, validatePlayerName } from '../utils/playerProfile';
+import { loginPlayer } from '../utils/playerSession';
+import { GraduationCap, User, Play } from 'lucide-react';
 interface WelcomeModalProps {
   isOpen: boolean;
   activePlayer: PlayerProfile | null;
@@ -20,204 +9,48 @@ interface WelcomeModalProps {
   onClose?: () => void;
   canClose?: boolean;
 }
-
-export const WelcomeModal: React.FC<WelcomeModalProps> = ({
-  isOpen,
-  activePlayer,
-  onSavePlayerAndStart,
-  onClose,
-  canClose = false,
-}) => {
+export const WelcomeModal: React.FC<WelcomeModalProps> = ({ isOpen, activePlayer, onSavePlayerAndStart }) => {
+  const [kind, setKind] = useState<'student' | 'guest' | null>(null);
   const [name, setName] = useState('');
-  const [error, setError] = useState<string | null>(null);
-  const [localProfiles, setLocalProfiles] = useState<PlayerProfile[]>([]);
-  const [showSwitchList, setShowSwitchList] = useState(false);
-
-  useEffect(() => {
-    if (isOpen) {
-      const profiles = loadAllLocalPlayers();
-      setLocalProfiles(profiles);
-      const savedName = getPlayerName(activePlayer?.name);
-      if (savedName) {
-        setName(savedName);
-      } else {
-        setName('');
-      }
-      setError(null);
-      setShowSwitchList(false);
-    }
-  }, [isOpen, activePlayer]);
-
-  if (!isOpen) return null;
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const playerName = name.trim();
-
-    // Step 1 Validation
-    if (!playerName || playerName.length < 2) {
-      setError('Please enter your name');
-      return;
-    }
-
-    const validation = validatePlayerName(playerName);
-    if (!validation.valid) {
-      setError(validation.error || 'Please enter your name');
-      return;
-    }
-
-    const validName = validation.trimmedName;
-    const playerId = activePlayer?.id || getOrCreatePlayerId();
-
-    // Step 11 Order:
-    // 1. Validate name (done above)
-    // 2. Save playerName
-    try {
-      localStorage.setItem(STORAGE_KEY_PLAYER_NAME, validName);
-      // 3. Save/generate playerId
-      localStorage.setItem(STORAGE_KEY_PLAYER_ID, playerId);
-    } catch {}
-
-    const profile = createPlayerProfile(validName, playerId);
-    registerPlayerWithServer(profile.id, profile.name);
-
-    // 4. Start game
-    onSavePlayerAndStart(profile);
+  const [pin, setPin] = useState('');
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+  useEffect(() => { if (isOpen) { setKind(null); setName(''); setPin(''); setError(''); } }, [isOpen]);
+  if (!isOpen || activePlayer) return null;
+  const submit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (busy || !kind) return;
+    const result = validatePlayerName(name);
+    if (!result.valid) { setError(result.error || 'Enter your name'); return; }
+    if (kind === 'student' && !/^\d{6}$/.test(pin)) { setError('Enter your 6-digit student PIN'); return; }
+    setBusy(true); setError('');
+    try { onSavePlayerAndStart(await loginPlayer(kind, result.trimmedName, pin)); }
+    catch (err) { setError(err instanceof Error ? err.message : 'Login failed. Please retry.'); }
+    finally { setBusy(false); }
   };
-
-  const handleSelectExistingProfile = (profile: PlayerProfile) => {
-    saveActivePlayer(profile);
-    registerPlayerWithServer(profile.id, profile.name);
-    onSavePlayerAndStart(profile);
-  };
-
-  return (
-    <div className="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="welcome-title">
-      <div className="modal-content welcome-modal-content">
-        {canClose && onClose && (
-          <button
-            className="modal-close-btn"
-            onClick={onClose}
-            aria-label="Close"
-            title="Cancel"
-          >
-            <X size={18} />
-          </button>
-        )}
-
-        <div className="welcome-modal-header">
-          <div className="welcome-brand-badge">
-            <div className="welcome-logo-circle">
-              <img src="/favicon.svg" alt="SkillType Starfighter" />
-            </div>
-            <span className="welcome-badge-text">SKILLENCE ACADEMY</span>
-          </div>
-
-          <h2 className="welcome-title" id="welcome-title">
-            Enter Player Name
-          </h2>
-          <p className="welcome-subtitle">
-            Enter your name to compete on the weekly and daily leaderboards.
-          </p>
-        </div>
-
-        <form onSubmit={handleSubmit} className="welcome-form">
-          <div className="form-group">
-            <div className="form-label-row">
-              <label htmlFor="player-name-input" className="form-label">
-                <User size={14} className="label-icon" /> Your Name
-              </label>
-              <span className="char-counter">
-                {name.length}/25
-              </span>
-            </div>
-
-            <div className="input-with-glow">
-              <input
-                id="player-name-input"
-                type="text"
-                className={`text-input player-name-input ${error ? 'input-error' : ''}`}
-                value={name}
-                onChange={(e) => {
-                  setName(e.target.value);
-                  if (error) setError(null);
-                }}
-                maxLength={25}
-                placeholder="e.g. Nisar, Rehan, Rahul Kumar"
-                autoFocus
-                autoComplete="off"
-                spellCheck="false"
-              />
-            </div>
-
-            {error && <div className="form-error-msg">{error}</div>}
-
-            <p className="form-hint">
-              Name is mandatory • 2–25 characters (spaces allowed) • Stored for convenience
-            </p>
-          </div>
-
-          <button type="submit" className="btn btn-primary btn-welcome-start">
-            <Play size={18} className="btn-icon" />
-            <span>Start Typing</span>
-          </button>
-        </form>
-
-        {/* Shared Computer Student Profiles */}
-        {localProfiles.length > 0 && (
-          <div className="welcome-shared-computer-section">
-            <button
-              type="button"
-              className="btn-link-switch-players"
-              onClick={() => setShowSwitchList((prev) => !prev)}
-            >
-              <Users size={14} />
-              <span>
-                {showSwitchList ? 'Hide profiles' : `Switch saved player on this device (${localProfiles.length})`}
-              </span>
-            </button>
-
-            {showSwitchList && (
-              <div className="shared-profiles-list">
-                <div className="shared-profiles-header">
-                  <span>Select player profile:</span>
-                </div>
-                <div className="shared-profiles-items">
-                  {localProfiles.map((p) => {
-                    const isCurrent = activePlayer?.id === p.id;
-                    return (
-                      <div
-                        key={p.id}
-                        className={`shared-profile-item ${isCurrent ? 'current' : ''}`}
-                        onClick={() => handleSelectExistingProfile(p)}
-                        role="button"
-                        tabIndex={0}
-                        onKeyDown={(e) => e.key === 'Enter' && handleSelectExistingProfile(p)}
-                      >
-                        <div className="shared-profile-info">
-                          <span className="shared-profile-name">{p.name}</span>
-                          <span className="shared-profile-meta">
-                            ID: {p.id.substring(0, 12)}...
-                          </span>
-                        </div>
-                        {isCurrent ? (
-                          <span className="badge-active-player">
-                            <Check size={12} /> Active
-                          </span>
-                        ) : (
-                          <span className="btn-select-profile">Select</span>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
+  return <div className="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="welcome-title">
+    <div className="modal-content welcome-modal-content">
+      <div className="welcome-modal-header">
+        <div className="welcome-brand-badge"><div className="welcome-logo-circle"><img src="/favicon.svg" alt="SkillType Starfighter" /></div><span className="welcome-badge-text">SKILLENCE ACADEMY</span></div>
+        <h2 className="welcome-title" id="welcome-title">Choose your login</h2>
+        <p className="welcome-subtitle">One profile at a time. Log out to change player.</p>
       </div>
+      <div className="login-choices" aria-label="Login type">
+        <button type="button" aria-pressed={kind === 'student'} className={`login-choice ${kind === 'student' ? 'selected' : ''}`} disabled={busy} onClick={() => { setKind('student'); setError(''); }}><GraduationCap size={24} /><strong>Student</strong><small>Name + 6-digit PIN</small></button>
+        <button type="button" aria-pressed={kind === 'guest'} className={`login-choice ${kind === 'guest' ? 'selected' : ''}`} disabled={busy} onClick={() => { setKind('guest'); setPin(''); setError(''); }}><User size={24} /><strong>Guest</strong><small>Name only</small></button>
+      </div>
+      {kind && <form onSubmit={submit} className="welcome-form">
+        <div className="form-group"><label htmlFor="player-name-input" className="form-label">Your full name</label>
+          <input id="player-name-input" className="text-input player-name-input" value={name} onChange={e => setName(e.target.value)} minLength={2} maxLength={25} required disabled={busy} autoComplete="name" placeholder="Enter your name" autoFocus />
+        </div>
+        {kind === 'student' && <div className="form-group"><label htmlFor="student-pin" className="form-label">Student PIN</label>
+          <input id="student-pin" className="text-input player-name-input" type="text" inputMode="numeric" pattern="[0-9]{6}" maxLength={6} value={pin} onChange={e => setPin(e.target.value.replace(/\D/g, ''))} required disabled={busy} placeholder="6-digit PIN from your teacher" autoComplete="off" />
+          <p className="form-hint">Use the same name and PIN each time. Your PIN appears on the leaderboard.</p></div>}
+        <p className="form-hint">Your displayed name is masked. {kind === 'guest' ? 'Guest profiles show “Not a student”.' : 'Your scores stay linked to your student profile.'}</p>
+        {error && <div className="form-error-msg" role="alert">{error}</div>}
+        <button type="submit" className="btn btn-primary btn-welcome-start" disabled={busy}><Play size={18} /><span>{busy ? 'Checking…' : 'Log in & Play'}</span></button>
+      </form>}
     </div>
-  );
+  </div>;
 };
-
 export default WelcomeModal;

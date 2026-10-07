@@ -83,7 +83,7 @@ export const LiveStatsPanel: React.FC<LiveStatsPanelProps> = ({
           <User size={18} />
         </div>
         <div className="player-meta-block">
-          <div className="player-meta-label">PILOT</div>
+          <div className="player-meta-label">{activePlayer?.kind === 'student' ? `PIN: ${activePlayer.pin}` : 'Not a student'}</div>
           <div
             className="player-meta-name"
             title={getPlayerName(activePlayer?.name) || 'Enter Name'}
@@ -95,11 +95,11 @@ export const LiveStatsPanel: React.FC<LiveStatsPanelProps> = ({
           type="button"
           className="btn-change-player"
           onClick={onChangePlayer}
-          title="Change Player Profile"
-          aria-label="Change Player"
+          title="Log out to change player"
+          aria-label="Logout"
         >
           <UserCheck size={13} />
-          <span>Change</span>
+          <span>Logout</span>
         </button>
       </div>
 

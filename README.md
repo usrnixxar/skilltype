@@ -173,3 +173,24 @@ read standings but cannot directly modify either scores or session records.
 This is a guest-name game, not a verified student login or anti-cheat system.
 A profile joins the shared leaderboard after its first scored game. Older results
 that were only saved in a browser are not retroactively imported.
+
+### Student and guest profiles
+
+Apply `supabase/profiles.sql` after the base schema and deploy both `player-session`
+and `submit-score` Edge Functions. Add six-digit enrollment PINs to the private
+`student_codes` table out of band; never commit the teacher's unused PIN list.
+Student first login binds the PIN to a name; subsequent logins require the same
+name (case insensitive, normalized spaces) and restore that student's ID. Guests
+receive a fresh profile on each login. Logout revokes the current backend session.
+Sessions last 30 days. The browser remembers one session and synchronizes profile
+changes across tabs. Legacy local-only profiles must log in again; historical scores
+remain in the leaderboard with masked names.
+
+PINs are deliberately public enrollment identifiers on the leaderboard, per the
+academy's requested behavior, and are not private passwords. Full names live only
+in the private profile table; public ranking names are masked by a database trigger.
+Score identity is derived from a random session token, whose SHA-256 hash is stored
+server-side. Client-supplied player IDs or names cannot redirect a score.
+
+Each visual bullet impact pauses its living target for 75 ms and pushes it upward
+2 px. Other enemies retain their original movement and spawn timing.

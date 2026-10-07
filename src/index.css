@@ -3120,3 +3120,12 @@ kbd {
   }
 }
 
+
+.login-choices { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 22px 0; }
+.login-choice { display: flex; flex-direction: column; align-items: center; gap: 9px; padding: 22px 12px; border: 1px solid #344467; border-radius: 12px; background: #0b142a; color: #dce8ff; cursor: pointer; font: inherit; }
+.login-choice.selected { border-color: #00f0ff; background: #10303d; box-shadow: 0 0 16px #00f0ff20; }
+.login-choice small { font-size: 12px; color: #adc0dd; }
+.login-choice:focus-visible { outline: 2px solid #00f0ff; outline-offset: 3px; }
+.player-enrollment { display: block; flex-basis: 100%; width: 100%; color: #93b9cf; font: 10px/1.5 ui-monospace, monospace; letter-spacing: .2px; }
+.col-player { flex-wrap: wrap; }
+.session-error { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #431b29; color: white; padding: 14px 20px; z-index: 999; border-radius: 8px; }
