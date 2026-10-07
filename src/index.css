@@ -2461,7 +2461,7 @@ kbd {
 
 .leaderboard-table-header {
   display: grid;
-  grid-template-columns: 28px minmax(0, 1fr) 62px 52px;
+  grid-template-columns: 24px minmax(0, 1fr) 58px 36px;
   column-gap: 4px;
   padding: 6px 8px;
   font-size: 0.65rem;
@@ -2495,7 +2495,7 @@ kbd {
 
 .leaderboard-row {
   display: grid;
-  grid-template-columns: 28px minmax(0, 1fr) 62px 52px;
+  grid-template-columns: 24px minmax(0, 1fr) 58px 36px;
   column-gap: 4px;
   align-items: center;
   padding: 8px 8px;

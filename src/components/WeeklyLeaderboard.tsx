@@ -3,7 +3,7 @@ import {
   fetchWeeklyLeaderboard,
   LeaderboardResponse,
 } from '../utils/leaderboardApi';
-import { PlayerProfile, getPlayerName } from '../utils/playerProfile';
+import { PlayerProfile } from '../utils/playerProfile';
 import { subscribeToLeaderboardRealtime } from '../utils/supabaseClient';
 import { getTimeUntilSaturdayReset } from '../utils/dateUtils';
 import {
@@ -270,7 +270,7 @@ export const WeeklyLeaderboard: React.FC<WeeklyLeaderboardProps> = ({
                     </div>
 
                     <div className="col-wpm">
-                      <span className="stat-mono-highlight">{displayedWpm} WPM</span>
+                      <span className="stat-mono-highlight">{displayedWpm}</span>
                     </div>
                   </div>
                 );
@@ -347,8 +347,8 @@ export const WeeklyLeaderboard: React.FC<WeeklyLeaderboardProps> = ({
               <span className="unranked-title">Awaiting first result</span>
             </div>
             <p className="unranked-subtext">
-              {getPlayerName(activePlayer?.name)
-                ? `${getPlayerName(activePlayer?.name)}, finish a game to join the leaderboard!`
+              {(activePlayer?.name || '')
+                ? `${(activePlayer?.name || '')}, finish a game to join the leaderboard!`
                 : 'Finish a game to join the leaderboard!'}
             </p>
           </div>
