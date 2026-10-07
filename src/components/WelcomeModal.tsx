@@ -31,7 +31,7 @@ export const WelcomeModal: React.FC<WelcomeModalProps> = ({ isOpen, activePlayer
   return <div className="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="welcome-title">
     <div className="modal-content welcome-modal-content">
       <div className="welcome-modal-header">
-        <div className="welcome-brand-badge"><div className="welcome-logo-circle"><img src="/favicon.svg" alt="SkillType Starfighter" /></div><span className="welcome-badge-text">SKILLENCE ACADEMY</span></div>
+        <div className="welcome-brand-badge"><div className="welcome-logo-circle"><img src="/skillence-logo.jpg" alt="SkillType Starfighter" /></div><span className="welcome-badge-text">SKILLENCE ACADEMY</span></div>
         <h2 className="welcome-title" id="welcome-title">Choose your login</h2>
         <p className="welcome-subtitle">One profile at a time. Log out to change player.</p>
       </div>
