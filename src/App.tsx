@@ -43,6 +43,7 @@ export const App: React.FC = () => {
   const engineRef = useRef<GameEngine | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const submittedRunIds = useRef<Set<string>>(new Set());
+  const pendingProfileStartRef = useRef<GameConfiguration | null>(null);
   const retryPayloadRef = useRef<SubmitRunPayload | null>(null);
   const activeSessionIdRef = useRef<string>(generateUuid());
 
@@ -232,6 +233,13 @@ export const App: React.FC = () => {
 
     engineRef.current = engine;
     engine.startLoop();
+    // Saving a profile recreates the engine. Start the replacement engine,
+    // not the old instance that the effect cleanup is about to destroy.
+    if (pendingProfileStartRef.current) {
+      engine.updateConfig(pendingProfileStartRef.current);
+      pendingProfileStartRef.current = null;
+      engine.startGame();
+    }
 
     const handleResize = () => engine.resize();
     window.addEventListener('resize', handleResize);
@@ -606,17 +614,15 @@ export const App: React.FC = () => {
             setCurrentMode('arcade');
             setAppState('gameplay');
             setModalOpen('none');
-            if (engineRef.current) {
-              engineRef.current.updateConfig({
-                mode: 'arcade',
-                difficulty: settings.difficulty,
-                category: 'common',
-                practiceTimedMinutes: 0,
-                practiceRelaxed: false,
-                reducedMotion: settings.reducedMotion,
-              });
-              engineRef.current.startGame();
-            }
+            activeSessionIdRef.current = generateUuid();
+            setSaveError(null);
+            setIsSavingRun(false);
+            retryPayloadRef.current = null;
+            pendingProfileStartRef.current = {
+              mode: 'arcade', difficulty: settings.difficulty, category: 'common',
+              customWords: [], practiceTimedMinutes: 0, practiceRelaxed: false,
+              practicePace: settings.practicePace, reducedMotion: settings.reducedMotion,
+            };
           }
         }}
       />

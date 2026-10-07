@@ -2461,7 +2461,8 @@ kbd {
 
 .leaderboard-table-header {
   display: grid;
-  grid-template-columns: 46px 1fr 78px 66px;
+  grid-template-columns: 28px minmax(0, 1fr) 62px 52px;
+  column-gap: 4px;
   padding: 6px 8px;
   font-size: 0.65rem;
   font-weight: 800;
@@ -2494,7 +2495,8 @@ kbd {
 
 .leaderboard-row {
   display: grid;
-  grid-template-columns: 46px 1fr 78px 66px;
+  grid-template-columns: 28px minmax(0, 1fr) 62px 52px;
+  column-gap: 4px;
   align-items: center;
   padding: 8px 8px;
   border-radius: 8px;
@@ -2576,9 +2578,9 @@ kbd {
 }
 
 .col-player {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  white-space: normal;
   padding-right: 6px;
 }
 
