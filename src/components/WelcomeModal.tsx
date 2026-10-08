@@ -45,7 +45,7 @@ export const WelcomeModal: React.FC<WelcomeModalProps> = ({ isOpen, activePlayer
         </div>
         {kind === 'student' && <div className="form-group"><label htmlFor="student-pin" className="form-label">Student PIN</label>
           <input id="student-pin" className="text-input player-name-input" type="text" inputMode="numeric" pattern="[0-9]{6}" maxLength={6} value={pin} onChange={e => setPin(e.target.value.replace(/\D/g, ''))} required disabled={busy} placeholder="6-digit PIN from your teacher" autoComplete="off" />
-          <p className="form-hint">Use the same name and PIN each time. Your PIN appears on the leaderboard.</p></div>}
+          <p className="form-hint">Use the same name and PIN each time. Keep your PIN private.</p></div>}
         <p className="form-hint">{kind === 'guest' ? 'Guest profiles show “Not a student”.' : 'Your full registered name is shown publicly and your scores stay linked to your student profile.'}</p>
         {error && <div className="form-error-msg" role="alert">{error}</div>}
         <button type="submit" className="btn btn-primary btn-welcome-start" disabled={busy}><Play size={18} /><span>{busy ? 'Checking…' : 'Log in & Play'}</span></button>
