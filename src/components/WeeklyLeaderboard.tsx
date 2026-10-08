@@ -260,7 +260,7 @@ export const WeeklyLeaderboard: React.FC<WeeklyLeaderboardProps> = ({
                         {entry.player_name || entry.playerName || (entry as any).name || 'Unnamed Player'}
                       </span>
                       {isCurrentPlayer && <span className="you-pill">YOU</span>}
-                      <small className="player-enrollment">{entry.playerType === 'student' ? `PIN: ${entry.studentPin}` : 'Not a student'}</small>
+                      <small className="player-enrollment">{entry.playerType === 'student' ? 'Student' : 'Not a student'}</small>
                     </div>
 
                     <div className="col-points">
@@ -317,7 +317,7 @@ export const WeeklyLeaderboard: React.FC<WeeklyLeaderboardProps> = ({
                   title={playerRankEntry.player_name || playerRankEntry.playerName}
                 >
                   {playerRankEntry.player_name || playerRankEntry.playerName || (playerRankEntry as any).name || 'Unnamed Player'} (You)
-                  <small className="player-enrollment">{playerRankEntry.playerType === 'student' ? `PIN: ${playerRankEntry.studentPin}` : 'Not a student'}</small>
+                  <small className="player-enrollment">{playerRankEntry.playerType === 'student' ? 'Student' : 'Not a student'}</small>
                 </span>
                 <span className="pinned-score">
                   {(activeTab === 'daily'
