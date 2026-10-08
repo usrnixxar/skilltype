@@ -25,6 +25,17 @@ const getClientIp = (req: Request) => {
   return req.headers.get('cf-connecting-ip') || req.headers.get('x-real-ip') || 'unknown';
 };
 
+const maskGuestName = (name: string) =>
+  name
+    .trim()
+    .split(/\s+/)
+    .map((word) => {
+      const chars = Array.from(word);
+      if (chars.length <= 2) return word;
+      return chars[0] + '*'.repeat(chars.length - 2) + chars[chars.length - 1];
+    })
+    .join(' ');
+
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers });
   if (req.method !== 'POST') return reply({ error: 'Method not allowed' }, 405);
@@ -43,7 +54,7 @@ Deno.serve(async (req: Request) => {
     if (body.action === 'cheaters') {
       const { data, error } = await admin
         .from('player_security')
-        .select('distinct_ip_count, flagged_at, player_profiles!inner(name)')
+        .select('distinct_ip_count, flagged_at, player_profiles!inner(name,kind)')
         .eq('is_cheater', true)
         .order('flagged_at', { ascending: false })
         .limit(50);
@@ -53,7 +64,10 @@ Deno.serve(async (req: Request) => {
       return reply({
         success: true,
         cheaters: (data || []).map((row: any) => ({
-          name: row.player_profiles?.name || 'Unknown',
+          name:
+            row.player_profiles?.kind === 'guest'
+              ? maskGuestName(row.player_profiles?.name || 'Unknown')
+              : row.player_profiles?.name || 'Unknown',
           distinctIpCount: row.distinct_ip_count,
           flaggedAt: row.flagged_at,
         })),
