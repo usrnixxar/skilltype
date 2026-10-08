@@ -13,6 +13,7 @@ import {
   PlayerProfile,
   loadActivePlayer,
   saveActivePlayer,
+  clearActivePlayer,
   generateUuid,
 } from './utils/playerProfile';
 import { submitGameRun, SubmitRunPayload } from './utils/leaderboardApi';
@@ -95,8 +96,25 @@ export const App: React.FC = () => {
       await submitGameRun(payload);
       if (retryPayloadRef.current?.gameSessionId === id) retryPayloadRef.current = null;
       setLastSavedRunId(id);
-    } catch {
+    } catch (error) {
       submittedRunIds.current.delete(id);
+      const message = error instanceof Error ? error.message : '';
+      const sessionExpired =
+        /please log in again|session expired|invalid session|unauthorized/i.test(message);
+
+      if (sessionExpired) {
+        clearActivePlayer();
+        pendingProfileStartRef.current = null;
+        retryPayloadRef.current = null;
+        activeSessionIdRef.current = generateUuid();
+        setActivePlayer(null);
+        setAppState('menu');
+        setModalOpen('none');
+        setSaveError('Session expired. Please log in again to continue saving leaderboard points.');
+        setWelcomeModalOpen(true);
+        return;
+      }
+
       if (activeSessionIdRef.current === id) {
         setSaveError('Your result is saved on this device, but has not reached the leaderboard. Please retry before leaving this screen.');
       }
