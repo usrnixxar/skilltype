@@ -21,7 +21,7 @@ ALTER TABLE public.player_profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.player_sessions ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON public.student_codes, public.player_profiles, public.player_sessions FROM anon, authenticated;
 GRANT ALL ON public.student_codes, public.player_profiles, public.player_sessions TO service_role;
-ALTER TABLE public.leaderboard ADD COLUMN player_type text NOT NULL DEFAULT 'guest', ADD COLUMN student_pin text;
+ALTER TABLE public.leaderboard ADD COLUMN player_type text NOT NULL DEFAULT 'guest';
 
 CREATE FUNCTION public.mask_player_name(p_name text) RETURNS text
 LANGUAGE sql IMMUTABLE SET search_path = '' AS $$
@@ -68,7 +68,7 @@ BEGIN
     RAISE EXCEPTION 'Please contact your teacher' USING ERRCODE = '28000';
   END IF;
   v_result := public.submit_game_score(p_session_id,v_profile.id::text,v_profile.name,p_score,p_wpm,p_accuracy);
-  UPDATE public.leaderboard SET player_type=v_profile.kind,student_pin=v_profile.pin,player_name=v_profile.name WHERE player_id=v_profile.id::text;
+  UPDATE public.leaderboard SET player_type=v_profile.kind,player_name=v_profile.name WHERE player_id=v_profile.id::text;
   -- Do not return an outdated metadata snapshot from the underlying score function.
   RETURN v_result - 'record';
 END;
