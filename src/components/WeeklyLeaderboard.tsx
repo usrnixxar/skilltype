@@ -284,7 +284,7 @@ export const WeeklyLeaderboard: React.FC<WeeklyLeaderboardProps> = ({
               {!isPlayerVisible && playerRankEntry && (
                 <div className="leaderboard-row current-player-row outside-top-ten-row">
                   <div className="col-rank">
-                    <span className="rank-indicator">10+</span>
+                    <span className="rank-indicator">#{playerRankEntry.rank}</span>
                   </div>
                   <div className="col-player" title={playerRankEntry.player_name || playerRankEntry.playerName}>
                     <span className="player-name-text">
