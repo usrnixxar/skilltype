@@ -52,7 +52,7 @@ BEGIN
       RETURNING * INTO v_profile;
   END IF;
   INSERT INTO public.player_sessions(token_hash,player_id) VALUES (p_hash,v_profile.id);
-  RETURN jsonb_build_object('id',v_profile.id,'name',public.mask_player_name(v_profile.name),
+  RETURN jsonb_build_object('id',v_profile.id,'name',v_profile.name,
     'kind',v_profile.kind,'pin',v_profile.pin,'createdAt',extract(epoch FROM v_profile.created_at)*1000);
 END;
 $$;
@@ -67,8 +67,8 @@ BEGIN
   IF v_profile.kind = 'student' AND NOT EXISTS (SELECT 1 FROM public.student_codes WHERE pin=v_profile.pin AND enabled) THEN
     RAISE EXCEPTION 'Please contact your teacher' USING ERRCODE = '28000';
   END IF;
-  v_result := public.submit_game_score(p_session_id,v_profile.id::text,public.mask_player_name(v_profile.name),p_score,p_wpm,p_accuracy);
-  UPDATE public.leaderboard SET player_type=v_profile.kind,student_pin=v_profile.pin WHERE player_id=v_profile.id::text;
+  v_result := public.submit_game_score(p_session_id,v_profile.id::text,v_profile.name,p_score,p_wpm,p_accuracy);
+  UPDATE public.leaderboard SET player_type=v_profile.kind,student_pin=v_profile.pin,player_name=v_profile.name WHERE player_id=v_profile.id::text;
   -- Do not return an outdated metadata snapshot from the underlying score function.
   RETURN v_result - 'record';
 END;
@@ -76,13 +76,4 @@ $$;
 REVOKE ALL ON FUNCTION public.login_player(text,text,text,text), public.submit_session_score(text,text,integer,numeric,numeric) FROM PUBLIC,anon,authenticated;
 GRANT EXECUTE ON FUNCTION public.login_player(text,text,text,text), public.submit_session_score(text,text,integer,numeric,numeric) TO service_role;
 
--- Keep every public write masked, including a cached older client during rollout.
-CREATE FUNCTION public.mask_leaderboard_profile() RETURNS trigger
-LANGUAGE plpgsql SET search_path = '' AS $$
-BEGIN
-  NEW.player_name := public.mask_player_name(NEW.player_name);
-  RETURN NEW;
-END;
-$$;
-CREATE TRIGGER mask_public_names BEFORE INSERT OR UPDATE ON public.leaderboard
-FOR EACH ROW EXECUTE FUNCTION public.mask_leaderboard_profile();
+-- Public leaderboard intentionally shows the player's full registered name.
