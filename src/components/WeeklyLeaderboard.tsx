@@ -308,28 +308,6 @@ export const WeeklyLeaderboard: React.FC<WeeklyLeaderboardProps> = ({
               )}
             </div>
 
-            {/* View All / Top 20 Toggle */}
-            {allEntries.length > 20 && (
-              <div className="leaderboard-view-all-row">
-                <button
-                  type="button"
-                  className="btn-view-all-toggle"
-                  onClick={() => setShowAll((prev) => !prev)}
-                >
-                  {showAll ? (
-                    <>
-                      <ChevronUp size={14} />
-                      <span>Show Top 20</span>
-                    </>
-                  ) : (
-                    <>
-                      <ChevronDown size={14} />
-                      <span>View All ({allEntries.length} players)</span>
-                    </>
-                  )}
-                </button>
-              </div>
-            )}
           </div>
         )}
       </div>
