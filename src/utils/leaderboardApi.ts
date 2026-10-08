@@ -150,7 +150,7 @@ export async function fetchWeeklyLeaderboard(
       );
 
       if (type === 'daily' && targetDayId) {
-        query = query.eq('day_id', targetDayId).gt('daily_points', 0);
+        query = query.eq('day_id', targetDayId);
         query = query
           .order('daily_points', { ascending: false })
           .order('best_wpm', { ascending: false })
