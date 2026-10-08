@@ -15,8 +15,6 @@ import {
   Zap,
   Calendar,
   Clock,
-  ChevronDown,
-  ChevronUp,
 } from 'lucide-react';
 
 interface WeeklyLeaderboardProps {
@@ -35,7 +33,6 @@ export const WeeklyLeaderboard: React.FC<WeeklyLeaderboardProps> = ({
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showAll, setShowAll] = useState(false);
   const [resetCountdown, setResetCountdown] = useState<string>('');
   const [cheaters, setCheaters] = useState<CheaterEntry[]>([]);
 
@@ -108,8 +105,7 @@ export const WeeklyLeaderboard: React.FC<WeeklyLeaderboardProps> = ({
   }, [activePlayer?.id, activeTab]);
 
   const allEntries = data?.entries || [];
-  const displayLimit = showAll ? allEntries.length : 20;
-  const entries = allEntries.slice(0, displayLimit);
+  const entries = allEntries.slice(0, 10);
   const playerRankEntry = data?.playerRank || null;
 
   // Check if current player is in the visible list
@@ -160,7 +156,6 @@ export const WeeklyLeaderboard: React.FC<WeeklyLeaderboardProps> = ({
           className={`leaderboard-tab-btn ${activeTab === 'weekly' ? 'active' : ''}`}
           onClick={() => {
             setActiveTab('weekly');
-            setShowAll(false);
           }}
         >
           <Calendar size={13} />
@@ -173,7 +168,6 @@ export const WeeklyLeaderboard: React.FC<WeeklyLeaderboardProps> = ({
           className={`leaderboard-tab-btn ${activeTab === 'daily' ? 'active' : ''}`}
           onClick={() => {
             setActiveTab('daily');
-            setShowAll(false);
           }}
         >
           <Clock size={13} />
@@ -286,6 +280,32 @@ export const WeeklyLeaderboard: React.FC<WeeklyLeaderboardProps> = ({
                   </div>
                 );
               })}
+
+              {!isPlayerVisible && playerRankEntry && (
+                <div className="leaderboard-row current-player-row outside-top-ten-row">
+                  <div className="col-rank">
+                    <span className="rank-indicator">10+</span>
+                  </div>
+                  <div className="col-player" title={playerRankEntry.player_name || playerRankEntry.playerName}>
+                    <span className="player-name-text">
+                      {playerRankEntry.player_name || playerRankEntry.playerName || (playerRankEntry as any).name || 'Unnamed Player'}
+                    </span>
+                    <span className="you-pill">YOU</span>
+                    <small className="player-enrollment">{playerRankEntry.playerType === 'student' ? 'Student' : 'Not a student'}</small>
+                  </div>
+                  <div className="col-points">
+                    <span className="stat-mono-score">
+                      {(activeTab === 'daily'
+                        ? playerRankEntry.dailyPoints ?? playerRankEntry.points ?? 0
+                        : playerRankEntry.weeklyPoints ?? playerRankEntry.points ?? 0
+                      ).toLocaleString()}
+                    </span>
+                  </div>
+                  <div className="col-wpm">
+                    <span className="stat-mono-highlight">{playerRankEntry.bestWpm ?? playerRankEntry.wpm ?? 0}</span>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* View All / Top 20 Toggle */}
@@ -332,40 +352,13 @@ export const WeeklyLeaderboard: React.FC<WeeklyLeaderboardProps> = ({
       {/* Footer Section: Highlight Current Player or Prompt to Play */}
       <div className="leaderboard-footer-section">
         {hasPlayerPlayed ? (
-          !isPlayerVisible && playerRankEntry ? (
-            // Personal Rank Card if outside top visible view
-            <div className="pinned-player-card">
-              <div className="pinned-label">YOUR RANK</div>
-              <div className="pinned-row">
-                <span className="pinned-rank">#{playerRankEntry.rank}</span>
-                <span
-                  className="pinned-name"
-                  title={playerRankEntry.player_name || playerRankEntry.playerName}
-                >
-                  {playerRankEntry.player_name || playerRankEntry.playerName || (playerRankEntry as any).name || 'Unnamed Player'} (You)
-                  <small className="player-enrollment">{playerRankEntry.playerType === 'student' ? 'Student' : 'Not a student'}</small>
-                </span>
-                <span className="pinned-score">
-                  {(activeTab === 'daily'
-                    ? playerRankEntry.dailyPoints ?? playerRankEntry.points
-                    : playerRankEntry.weeklyPoints ?? playerRankEntry.points
-                  ).toLocaleString()}{' '}
-                  pts
-                </span>
-                <span className="pinned-wpm">
-                  {playerRankEntry.bestWpm ?? playerRankEntry.wpm} WPM
-                </span>
-              </div>
-            </div>
-          ) : (
-            <div className="leaderboard-status-hint">
-              <span>
-                {activeTab === 'weekly'
-                  ? 'Weekly total points • Highest Points = Rank #1'
-                  : 'Daily total points • Highest Points = Rank #1'}
-              </span>
-            </div>
-          )
+          <div className="leaderboard-status-hint">
+            <span>
+              {activeTab === 'weekly'
+                ? 'Top 10 weekly players • Beat #10 to enter the leaderboard'
+                : 'Top 10 today • Beat #10 to enter the leaderboard'}
+            </span>
+          </div>
         ) : (
           <div className="unranked-player-card">
             <div className="unranked-title-row">
