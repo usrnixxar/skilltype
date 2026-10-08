@@ -3129,3 +3129,56 @@ kbd {
 .player-enrollment { display: block; flex-basis: 100%; width: 100%; color: #93b9cf; font: 10px/1.5 ui-monospace, monospace; letter-spacing: .2px; }
 .col-player { flex-wrap: wrap; }
 .session-error { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #431b29; color: white; padding: 14px 20px; z-index: 999; border-radius: 8px; }
+
+
+/* Anti-cheat flagged accounts */
+.cheater-section {
+  margin-top: 12px;
+  padding: 10px;
+  border: 1px solid rgba(255, 82, 82, 0.45);
+  border-radius: 10px;
+  background: rgba(80, 12, 24, 0.28);
+}
+.cheater-section-title {
+  font-size: 0.78rem;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  color: #ff6b81;
+}
+.cheater-section-subtitle {
+  margin-top: 3px;
+  margin-bottom: 8px;
+  font-size: 0.64rem;
+  color: #d7a2ad;
+}
+.cheater-list {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  max-height: 120px;
+  overflow-y: auto;
+}
+.cheater-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 7px;
+  background: rgba(255, 82, 82, 0.08);
+  border: 1px solid rgba(255, 82, 82, 0.16);
+}
+.cheater-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #fff;
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+.cheater-ip-count {
+  flex-shrink: 0;
+  color: #ff8fa3;
+  font: 700 0.68rem/1 ui-monospace, monospace;
+}
