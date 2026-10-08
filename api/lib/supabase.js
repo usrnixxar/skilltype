@@ -29,7 +29,7 @@ export async function fetchSupabaseLeaderboard(playerId, type, override) {
   const daily = type === 'daily';
   const period = override || (daily ? getDayId(now) : getWeekId(now));
   const pointsKey = daily ? 'daily_points' : 'weekly_points';
-  let query = client().from('leaderboard').select('*')
+  let query = client().from('leaderboard').select('id, player_id, player_name, player_type, total_points, weekly_points, daily_points, best_wpm, best_accuracy, games_played, last_score, last_played_at, week_id, day_id')
     .eq(daily ? 'day_id' : 'week_id', period)
     .order(pointsKey, { ascending: false })
     .order('best_wpm', { ascending: false })
@@ -39,7 +39,7 @@ export async function fetchSupabaseLeaderboard(playerId, type, override) {
   const { data, error } = await query;
   if (error) throw new Error('Leaderboard is temporarily unavailable.');
   const entries = data.map((row, index) => ({
-    playerType: row.player_type, studentPin: row.student_pin,
+    playerType: row.player_type,
     rank: index + 1, id: row.id, runId: row.id,
     playerId: row.player_id, player_id: row.player_id,
     playerName: row.player_name, player_name: row.player_name, name: row.player_name,
