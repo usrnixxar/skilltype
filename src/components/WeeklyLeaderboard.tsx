@@ -6,6 +6,7 @@ import {
 import { PlayerProfile } from '../utils/playerProfile';
 import { subscribeToLeaderboardRealtime } from '../utils/supabaseClient';
 import { getTimeUntilSaturdayReset } from '../utils/dateUtils';
+import { fetchCheaters, CheaterEntry } from '../utils/playerSession';
 import {
   Trophy,
   RotateCw,
@@ -36,6 +37,7 @@ export const WeeklyLeaderboard: React.FC<WeeklyLeaderboardProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [showAll, setShowAll] = useState(false);
   const [resetCountdown, setResetCountdown] = useState<string>('');
+  const [cheaters, setCheaters] = useState<CheaterEntry[]>([]);
 
   // Update Saturday reset countdown timer every minute
   useEffect(() => {
@@ -70,6 +72,15 @@ export const WeeklyLeaderboard: React.FC<WeeklyLeaderboardProps> = ({
     },
     [activePlayer?.id, activeTab, data]
   );
+
+  useEffect(() => {
+    const loadCheaters = () => {
+      fetchCheaters().then(setCheaters).catch(() => {});
+    };
+    loadCheaters();
+    const timer = setInterval(loadCheaters, 60000);
+    return () => clearInterval(timer);
+  }, [lastSavedRunId]);
 
   // Initial load and reload when tab, active player, or saved run changes
   useEffect(() => {
@@ -302,6 +313,21 @@ export const WeeklyLeaderboard: React.FC<WeeklyLeaderboardProps> = ({
           </div>
         )}
       </div>
+
+      {cheaters.length > 0 && (
+        <div className="cheater-section" aria-label="Anti-cheat flagged accounts">
+          <div className="cheater-section-title">⚠ CHEATER SECTION</div>
+          <div className="cheater-section-subtitle">Accounts detected on more than 2 network IPs</div>
+          <div className="cheater-list">
+            {cheaters.map((entry, index) => (
+              <div className="cheater-row" key={`${entry.name}-${index}`}>
+                <span className="cheater-name">{entry.name}</span>
+                <span className="cheater-ip-count">{entry.distinctIpCount} IPs</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Footer Section: Highlight Current Player or Prompt to Play */}
       <div className="leaderboard-footer-section">
