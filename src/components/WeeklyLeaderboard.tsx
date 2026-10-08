@@ -147,6 +147,23 @@ export const WeeklyLeaderboard: React.FC<WeeklyLeaderboardProps> = ({
         </button>
       </div>
 
+      {/* Wave 15 Top Achievement */}
+      <div className="top-achievement-wrap" aria-label="Wave 15 top achievement">
+        <div className="top-achievement-box">
+          <img
+            src="/wave15-headset.png"
+            alt="Gaming headset reward"
+            className="top-achievement-image"
+            draggable={false}
+          />
+          <div className="top-achievement-copy">
+            <span className="top-achievement-kicker">TOP ACHIEVEMENT</span>
+            <strong className="top-achievement-title">Complete 15 Waves to Win</strong>
+            <span className="top-achievement-subtitle">Weekly &amp; Today Challenge</span>
+          </div>
+        </div>
+      </div>
+
       {/* Tab Switcher: Weekly vs Today */}
       <div className="leaderboard-tabs-bar" role="tablist">
         <button
