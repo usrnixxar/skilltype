@@ -10,7 +10,6 @@ import { sanitizePlayerName } from './playerProfile';
 
 export interface LeaderboardEntry {
   playerType?: 'student' | 'guest';
-  studentPin?: string | null;
   rank: number;
   id: string;
   runId?: string;
@@ -147,7 +146,7 @@ export async function fetchWeeklyLeaderboard(
 
       // Step 6: Fetch explicitly includes player_name
       let query = supabase.from('leaderboard').select(
-        'id, player_id, player_name, player_type, student_pin, total_points, weekly_points, daily_points, best_wpm, best_accuracy, games_played, last_score, created_at, updated_at, last_played_at, week_id, day_id'
+        'id, player_id, player_name, player_type, total_points, weekly_points, daily_points, best_wpm, best_accuracy, games_played, last_score, created_at, updated_at, last_played_at, week_id, day_id'
       );
 
       if (type === 'daily' && targetDayId) {
@@ -175,7 +174,7 @@ export async function fetchWeeklyLeaderboard(
           const pId = row.player_id || row.playerId || '';
 
           const entry: LeaderboardEntry = {
-            playerType: row.player_type, studentPin: row.student_pin,
+            playerType: row.player_type,
             rank: index + 1,
             id: row.id,
             runId: row.id,
