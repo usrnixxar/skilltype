@@ -37,6 +37,13 @@ export const WeeklyLeaderboard: React.FC<WeeklyLeaderboardProps> = ({
   const [resetCountdown, setResetCountdown] = useState<string>('');
   const [cheaters, setCheaters] = useState<CheaterEntry[]>([]);
 
+  const flaggedNames = new Set(cheaters.map((entry) => entry.name.trim()));
+  const renderPlayerName = (name: string) => flaggedNames.has(name.trim()) ? (
+    <span title="Flagged by anti-cheat" style={{ color: '#f87171', backgroundColor: 'rgba(239, 68, 68, 0.14)', borderRadius: 4, padding: '1px 4px' }}>
+      <span role="img" aria-label="Cheater caution">⚠️</span>{' '}{name}
+    </span>
+  ) : name;
+
   const adminPreview = useRef<HTMLDialogElement>(null);
 
   // Update Saturday reset countdown timer every minute
@@ -320,7 +327,7 @@ export const WeeklyLeaderboard: React.FC<WeeklyLeaderboardProps> = ({
                             draggable={false}
                           />
                         )}
-                        {isAdmin ? 'Admin' : (entry.player_name || entry.playerName || (entry as any).name || 'Unnamed Player')}
+                        {isAdmin ? 'Admin' : renderPlayerName(entry.player_name || entry.playerName || entry.name || 'Unnamed Player')}
                       </span>
                       {isCurrentPlayer && <span className="you-pill">YOU</span>}
                       <small className="player-enrollment">{isAdmin ? 'Admin' : (entry.playerType === 'student' ? 'Student' : 'Not a student')}</small>
@@ -346,7 +353,7 @@ export const WeeklyLeaderboard: React.FC<WeeklyLeaderboardProps> = ({
                   </div>
                   <div className="col-player" title={playerRankEntry.player_name || playerRankEntry.playerName}>
                     <span className="player-name-text">
-                      {playerRankEntry.player_name || playerRankEntry.playerName || (playerRankEntry as any).name || 'Unnamed Player'}
+                      {renderPlayerName(playerRankEntry.player_name || playerRankEntry.playerName || playerRankEntry.name || 'Unnamed Player')}
                     </span>
                     <span className="you-pill">YOU</span>
                     <small className="player-enrollment">{playerRankEntry.playerType === 'student' ? 'Student' : 'Not a student'}</small>
@@ -369,21 +376,6 @@ export const WeeklyLeaderboard: React.FC<WeeklyLeaderboardProps> = ({
           </div>
         )}
       </div>
-
-      {cheaters.length > 0 && (
-        <div className="cheater-section" aria-label="Anti-cheat flagged accounts">
-          <div className="cheater-section-title">⚠ CHEATER SECTION</div>
-          <div className="cheater-section-subtitle">Accounts detected on more than 2 network IPs</div>
-          <div className="cheater-list">
-            {cheaters.map((entry, index) => (
-              <div className="cheater-row" key={`${entry.name}-${index}`}>
-                <span className="cheater-name">{entry.name}</span>
-                <span className="cheater-ip-count">{entry.distinctIpCount} IPs</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
 
       {/* Footer Section: Highlight Current Player or Prompt to Play */}
       <div className="leaderboard-footer-section">
