@@ -35,7 +35,7 @@ import { SettingsModal } from './components/SettingsModal';
 import { MobileInputHelper } from './components/MobileInputHelper';
 import { LiveStatsPanel } from './components/LiveStatsPanel';
 import { WeeklyLeaderboard } from './components/WeeklyLeaderboard';
-import { logoutPlayer } from './utils/playerSession';
+import { logoutPlayer, validatePlayerSession } from './utils/playerSession';
 import { WelcomeModal } from './components/WelcomeModal';
 
 export const App: React.FC = () => {
@@ -67,6 +67,51 @@ export const App: React.FC = () => {
     } catch (error) { setLogoutError(error instanceof Error ? error.message : 'Logout failed. Please retry.'); }
     finally { setLoggingOut(false); }
   };
+  useEffect(() => {
+    if (!activePlayer?.sessionToken) return;
+
+    let stopped = false;
+
+    const forceLocalLogout = () => {
+      if (stopped) return;
+      engineRef.current?.reset();
+      clearActivePlayer();
+      pendingProfileStartRef.current = null;
+      retryPayloadRef.current = null;
+      activeSessionIdRef.current = generateUuid();
+      setActivePlayer(null);
+      setAppState('menu');
+      setModalOpen('none');
+      setSaveError(null);
+      setIsSavingRun(false);
+      setLogoutError('This account was logged in on another device. You have been logged out here.');
+      setWelcomeModalOpen(true);
+    };
+
+    const checkSession = async () => {
+      try {
+        const valid = await validatePlayerSession(activePlayer);
+        if (!valid) forceLocalLogout();
+      } catch {
+        // Temporary network errors must not log the player out.
+      }
+    };
+
+    void checkSession();
+    const timer = window.setInterval(checkSession, 5000);
+
+    const checkOnFocus = () => void checkSession();
+    window.addEventListener('focus', checkOnFocus);
+    document.addEventListener('visibilitychange', checkOnFocus);
+
+    return () => {
+      stopped = true;
+      window.clearInterval(timer);
+      window.removeEventListener('focus', checkOnFocus);
+      document.removeEventListener('visibilitychange', checkOnFocus);
+    };
+  }, [activePlayer?.sessionToken]);
+
   useEffect(() => {
     const syncProfile = (event: StorageEvent) => {
       if (event.key !== 'skilltype_active_player' && event.key !== null) return;
