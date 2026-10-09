@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { PlayerProfile, validatePlayerName } from '../utils/playerProfile';
-import { loginPlayer } from '../utils/playerSession';
+import { loginPlayer, SessionConflictError } from '../utils/playerSession';
 import { GraduationCap, User, Play } from 'lucide-react';
 interface WelcomeModalProps {
   isOpen: boolean;
@@ -24,9 +24,35 @@ export const WelcomeModal: React.FC<WelcomeModalProps> = ({ isOpen, activePlayer
     if (!result.valid) { setError(result.error || 'Enter your name'); return; }
     if (kind === 'student' && !/^\d{6}$/.test(pin)) { setError('Enter your 6-digit student PIN'); return; }
     setBusy(true); setError('');
-    try { onSavePlayerAndStart(await loginPlayer(kind, result.trimmedName, pin)); }
-    catch (err) { setError(err instanceof Error ? err.message : 'Login failed. Please retry.'); }
-    finally { setBusy(false); }
+    try {
+      onSavePlayerAndStart(await loginPlayer(kind, result.trimmedName, pin));
+    } catch (err) {
+      if (err instanceof SessionConflictError) {
+        const confirmed = window.confirm(
+          'This Student ID is already logged in on another device.\n\nPress OK to log out that device and continue on this device.'
+        );
+
+        if (confirmed) {
+          try {
+            onSavePlayerAndStart(
+              await loginPlayer(kind, result.trimmedName, pin, true)
+            );
+          } catch (forceError) {
+            setError(
+              forceError instanceof Error
+                ? forceError.message
+                : 'Unable to switch device. Please retry.'
+            );
+          }
+        } else {
+          setError('Login cancelled. Your other device is still logged in.');
+        }
+      } else {
+        setError(err instanceof Error ? err.message : 'Login failed. Please retry.');
+      }
+    } finally {
+      setBusy(false);
+    }
   };
   return <div className="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="welcome-title">
     <div className="modal-content welcome-modal-content">
