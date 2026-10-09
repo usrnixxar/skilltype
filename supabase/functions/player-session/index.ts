@@ -139,6 +139,69 @@ Deno.serve(async (req: Request) => {
       return reply({ error: 'Device verification failed. Refresh and try again.' }, 400);
     }
 
+    if (body.kind === 'student') {
+      const { data: existingProfile, error: profileError } = await admin
+        .from('player_profiles')
+        .select('id,name')
+        .eq('pin', body.pin)
+        .maybeSingle();
+
+      if (profileError) {
+        return reply({ error: 'Login unavailable. Please retry.' }, 503);
+      }
+
+      if (existingProfile) {
+        const normalizedStoredName = String(existingProfile.name || '')
+          .trim()
+          .replace(/\s+/g, ' ')
+          .toLowerCase();
+
+        if (normalizedStoredName !== name.toLowerCase()) {
+          return reply(
+            { error: 'This PIN is registered to another name. Enter your original name.' },
+            400
+          );
+        }
+
+        const { data: otherSessions, error: sessionLookupError } = await admin
+          .from('player_sessions')
+          .select('token_hash')
+          .eq('player_id', existingProfile.id)
+          .gt('expires_at', new Date().toISOString())
+          .neq('device_id', body.deviceId)
+          .limit(1);
+
+        if (sessionLookupError) {
+          return reply({ error: 'Login unavailable. Please retry.' }, 503);
+        }
+
+        if ((otherSessions || []).length > 0) {
+          if (body.forceLogoutOther !== true) {
+            return reply(
+              {
+                error: 'This Student ID is already logged in on another device.',
+                code: 'ACTIVE_ON_OTHER_DEVICE',
+                requiresConfirmation: true,
+              },
+              409
+            );
+          }
+
+          const { error: revokeError } = await admin
+            .from('player_sessions')
+            .delete()
+            .eq('player_id', existingProfile.id);
+
+          if (revokeError) {
+            return reply(
+              { error: 'Could not log out the previous device. Please retry.' },
+              503
+            );
+          }
+        }
+      }
+    }
+
     const token = Array.from(
       crypto.getRandomValues(new Uint8Array(32)),
       (b) => b.toString(16).padStart(2, '0')
