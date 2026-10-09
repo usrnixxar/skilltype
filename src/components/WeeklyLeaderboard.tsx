@@ -104,8 +104,15 @@ export const WeeklyLeaderboard: React.FC<WeeklyLeaderboardProps> = ({
     return () => clearInterval(timer);
   }, [activePlayer?.id, activeTab]);
 
+  const ADMIN_PLAYER_ID = '5c99b1c8-e130-4c27-a750-88e35362c581';
   const allEntries = data?.entries || [];
-  const entries = allEntries.slice(0, 10);
+  const entries = [...allEntries]
+    .sort((a, b) => {
+      if (a.playerId === ADMIN_PLAYER_ID) return -1;
+      if (b.playerId === ADMIN_PLAYER_ID) return 1;
+      return a.rank - b.rank;
+    })
+    .slice(0, 10);
   const playerRankEntry = data?.playerRank || null;
 
   // Check if current player is in the visible list
@@ -243,18 +250,20 @@ export const WeeklyLeaderboard: React.FC<WeeklyLeaderboardProps> = ({
             </div>
 
             <div className="leaderboard-scroll-area">
-              {entries.map((entry) => {
+              {entries.map((entry, index) => {
                 const isCurrentPlayer = activePlayer?.id === entry.playerId;
+                const isAdmin = entry.playerId === ADMIN_PLAYER_ID;
+                const displayRank = index + 1;
                 let rankClass = '';
-                let rankBadge = `${entry.rank}`;
+                let rankBadge = `${displayRank}`;
 
-                if (entry.rank === 1) {
+                if (isAdmin || displayRank === 1) {
                   rankClass = 'rank-gold';
-                  rankBadge = '🥇 1';
-                } else if (entry.rank === 2) {
+                  rankBadge = isAdmin ? '👑 1' : '🥇 1';
+                } else if (displayRank === 2) {
                   rankClass = 'rank-silver';
                   rankBadge = '🥈 2';
-                } else if (entry.rank === 3) {
+                } else if (displayRank === 3) {
                   rankClass = 'rank-bronze';
                   rankBadge = '🥉 3';
                 }
@@ -277,17 +286,25 @@ export const WeeklyLeaderboard: React.FC<WeeklyLeaderboardProps> = ({
                       <span className="rank-indicator">{rankBadge}</span>
                     </div>
 
-                    <div className="col-player" title={entry.player_name || entry.playerName}>
-                      <span className="player-name-text">
-                        {entry.player_name || entry.playerName || (entry as any).name || 'Unnamed Player'}
+                    <div className="col-player" title={isAdmin ? 'Admin' : (entry.player_name || entry.playerName)}>
+                      <span className="player-name-text" style={isAdmin ? { display: 'inline-flex', alignItems: 'center', gap: 6 } : undefined}>
+                        {isAdmin && (
+                          <img
+                            src="/skillence-logo.jpg"
+                            alt="Admin"
+                            style={{ width: 18, height: 18, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }}
+                            draggable={false}
+                          />
+                        )}
+                        {isAdmin ? 'Admin' : (entry.player_name || entry.playerName || (entry as any).name || 'Unnamed Player')}
                       </span>
                       {isCurrentPlayer && <span className="you-pill">YOU</span>}
-                      <small className="player-enrollment">{entry.playerType === 'student' ? 'Student' : 'Not a student'}</small>
+                      <small className="player-enrollment">{isAdmin ? 'Admin' : (entry.playerType === 'student' ? 'Student' : 'Not a student')}</small>
                     </div>
 
                     <div className="col-points">
                       <span className="stat-mono-score">
-                        {displayedPoints.toLocaleString()}
+                        {isAdmin ? '∞' : displayedPoints.toLocaleString()}
                       </span>
                     </div>
 
