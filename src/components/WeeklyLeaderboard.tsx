@@ -1,3 +1,4 @@
+import { useCompetition } from '../context/CompetitionContext';
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import {
   fetchWeeklyLeaderboard,
@@ -29,6 +30,7 @@ export const WeeklyLeaderboard: React.FC<WeeklyLeaderboardProps> = ({
   lastSavedRunId,
   isSavingRun = false,
 }) => {
+  const { practiceOnly } = useCompetition();
   const [activeTab, setActiveTab] = useState<'weekly' | 'daily'>('weekly');
   const [data, setData] = useState<LeaderboardResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -231,6 +233,8 @@ export const WeeklyLeaderboard: React.FC<WeeklyLeaderboardProps> = ({
         </button>
       </div>
 
+      {practiceOnly && <div className="sunday-practice-note">Sunday practice • Points paused until Monday</div>}
+
       {/* Saving Banner */}
       {isSavingRun && (
         <div className="leaderboard-saving-bar">
@@ -335,7 +339,7 @@ export const WeeklyLeaderboard: React.FC<WeeklyLeaderboardProps> = ({
 
                     <div className="col-points">
                       <span className="stat-mono-score">
-                        {isAdmin ? '∞' : displayedPoints.toLocaleString()}
+                        {practiceOnly ? '----' : isAdmin ? '∞' : displayedPoints.toLocaleString()}
                       </span>
                     </div>
 
@@ -360,7 +364,7 @@ export const WeeklyLeaderboard: React.FC<WeeklyLeaderboardProps> = ({
                   </div>
                   <div className="col-points">
                     <span className="stat-mono-score">
-                      {(activeTab === 'daily'
+                      {practiceOnly ? '----' : (activeTab === 'daily'
                         ? playerRankEntry.dailyPoints ?? playerRankEntry.points ?? 0
                         : playerRankEntry.weeklyPoints ?? playerRankEntry.points ?? 0
                       ).toLocaleString()}

@@ -1,3 +1,4 @@
+import { useCompetition } from '../context/CompetitionContext';
 import { RotateCcw, Home, Sparkles, AlertCircle } from 'lucide-react';
 import { GameStats } from '../game/types';
 import { Difficulty, GameMode } from '../utils/storage';
@@ -27,6 +28,7 @@ export const ResultsModal: React.FC<ResultsModalProps> = ({
   onPlayAgain,
   onReturnToMenu,
 }) => {
+  const { practiceOnly } = useCompetition();
   if (!isOpen) return null;
 
   // Format Duration mm:ss
@@ -58,7 +60,7 @@ export const ResultsModal: React.FC<ResultsModalProps> = ({
       <div className="modal-panel results-panel">
         {/* Banner */}
         <div className="results-header">
-          {isNewPersonalBest && (
+          {isNewPersonalBest && !practiceOnly && (
             <div className="new-pb-badge">
               <Sparkles size={16} />
               <span>NEW PERSONAL BEST!</span>
@@ -75,10 +77,11 @@ export const ResultsModal: React.FC<ResultsModalProps> = ({
         {/* Grand Score Display */}
         <div className="results-score-card">
           <span className="results-score-label">FINAL SCORE</span>
-          <div className="results-score-number">{stats.score.toLocaleString()}</div>
+          <div className="results-score-number">{practiceOnly ? '----' : stats.score.toLocaleString()}</div>
         </div>
 
-        {isSavingRun && <p role="status">Saving your leaderboard score…</p>}
+        {isSavingRun && !practiceOnly && <p role="status">Saving your leaderboard score…</p>}
+        {practiceOnly && <p className="sunday-practice-note">Sunday practice — no competition points awarded.</p>}
         {saveError && (
           <div role="alert">
             <p>{saveError}</p>

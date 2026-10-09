@@ -302,6 +302,9 @@ export async function recordCompletedRun(runData) {
     });
   }
 
+  if (getKolkataComponents(serverTime).dayOfWeek === 0) {
+    return { success: true, practiceOnly: true, sessionId: effectiveSessionId, completedAt: serverTime };
+  }
   const sql = getSqlClient();
 
   if (sql) {

@@ -1,4 +1,5 @@
 import React from 'react';
+import { useCompetition } from '../context/CompetitionContext';
 import { GameStats } from '../game/types';
 import { getTargetWPM } from '../game/WaveManager';
 import { GameMode } from '../utils/storage';
@@ -24,6 +25,7 @@ export const LiveStatsPanel: React.FC<LiveStatsPanelProps> = ({
   onChangePlayer,
   isPlaying,
 }) => {
+  const { practiceOnly, winner, loading, unavailable } = useCompetition();
   // Format Accuracy
   const totalKeystrokes = stats.correctKeystrokes + stats.incorrectKeystrokes;
   const accuracyStr =
@@ -109,9 +111,11 @@ export const LiveStatsPanel: React.FC<LiveStatsPanelProps> = ({
         <div className="stat-card stat-card-score">
           <div className="stat-card-label">SCORE</div>
           <div className="stat-card-value stat-score-value">
-            {stats.score.toLocaleString()}
+            {practiceOnly ? '----' : stats.score.toLocaleString()}
           </div>
         </div>
+
+        {practiceOnly && <div className="stat-card-subtext sunday-practice-note">Sunday practice • Points resume Monday 12:00 AM IST</div>}
 
         {/* WAVE */}
         <div className="stat-card stat-card-wave">
@@ -168,6 +172,12 @@ export const LiveStatsPanel: React.FC<LiveStatsPanelProps> = ({
             {wpmStr}
           </div>
           <div className="stat-card-subtext">Target: {targetWpm} WPM</div>
+        </div>
+
+        <div className="stat-card stat-card-winner">
+          <div className="stat-card-label">🏆 LAST WEEK WINNER</div>
+          <div className="last-week-winner-name">{winner?.name ?? (loading ? 'Loading…' : unavailable ? 'Temporarily unavailable' : 'No winner yet')}</div>
+          <div className="stat-card-subtext">Highest points at Saturday close • IST</div>
         </div>
 
         {/* Practice Timer Countdown if applicable */}

@@ -1,3 +1,4 @@
+import { useCompetition } from '../context/CompetitionContext';
 import React, { useState } from 'react';
 import { X, Trophy, Trash2, Calendar, Award, History } from 'lucide-react';
 import { GameRecords, clearAllRecords } from '../utils/storage';
@@ -16,6 +17,7 @@ export const RecordsModal: React.FC<RecordsModalProps> = ({
   records,
   onRecordsCleared,
 }) => {
+  const { practiceOnly } = useCompetition();
   const [activeTab, setActiveTab] = useState<'bests' | 'history'>('bests');
   const [showClearConfirm, setShowClearConfirm] = useState(false);
 
@@ -91,7 +93,7 @@ export const RecordsModal: React.FC<RecordsModalProps> = ({
                             <span className="pb-mode-badge">{mode.toUpperCase()}</span>
                             <span className="pb-diff-badge">{diff?.toUpperCase()}</span>
                           </div>
-                          <div className="pb-score-large">{pb.score.toLocaleString()} pts</div>
+                          <div className="pb-score-large">{practiceOnly ? '----' : pb.score.toLocaleString()} pts</div>
                           <div className="pb-details-row">
                             <div className="pb-stat">
                               <span className="stat-label">WPM</span>
@@ -149,7 +151,7 @@ export const RecordsModal: React.FC<RecordsModalProps> = ({
                               </span>
                             </td>
                             <td>{session.difficulty}</td>
-                            <td className="cell-bold">{session.score.toLocaleString()}</td>
+                            <td className="cell-bold">{practiceOnly ? '----' : session.score.toLocaleString()}</td>
                             <td className="text-cyan font-mono">{session.wpm}</td>
                             <td className="text-green font-mono">{session.accuracy}%</td>
                             <td>{session.wave}</td>

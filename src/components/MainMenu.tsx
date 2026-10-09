@@ -1,3 +1,4 @@
+import { useCompetition } from '../context/CompetitionContext';
 import React from 'react';
 import { Play, BookOpen, Trophy, Sliders, HelpCircle } from 'lucide-react';
 import { Difficulty, PersonalBest } from '../utils/storage';
@@ -23,6 +24,7 @@ export const MainMenu: React.FC<MainMenuProps> = ({
   onChangeDifficulty,
   currentBest,
 }) => {
+  const { practiceOnly } = useCompetition();
   return (
     <div className="main-menu-overlay" role="region" aria-label="Main Menu">
       <div className="menu-container">
@@ -47,7 +49,7 @@ export const MainMenu: React.FC<MainMenuProps> = ({
         {currentBest && (
           <div className="menu-best-banner">
             <span className="best-label">ARCADE RECORD ({difficulty.toUpperCase()}):</span>
-            <span className="best-score">{currentBest.score.toLocaleString()} pts</span>
+            <span className="best-score">{practiceOnly ? '----' : currentBest.score.toLocaleString()} pts</span>
             <span className="best-meta">• {currentBest.wpm} WPM • Wave {currentBest.wave}</span>
           </div>
         )}

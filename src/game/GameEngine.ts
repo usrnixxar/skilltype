@@ -1,3 +1,4 @@
+import { isSundayPractice } from '../utils/competitionClock';
 // Master Game Engine for SkillType
 // Controls game loop, physics, input dispatch, rendering, and stats.
 
@@ -302,7 +303,7 @@ export class GameEngine {
     if (result.status === 'hit' && result.targetEnemy) {
       // Correct keystroke
       this.stats.correctKeystrokes++;
-      if (result.charScoreAwarded) {
+      if (!isSundayPractice() && result.charScoreAwarded) {
         this.stats.score += result.charScoreAwarded;
       }
 
@@ -322,8 +323,8 @@ export class GameEngine {
       // Word successfully finished!
       this.stats.correctKeystrokes++;
       this.stats.wordsCompleted++;
-      if (result.charScoreAwarded) this.stats.score += result.charScoreAwarded;
-      if (result.wordScoreAwarded) this.stats.score += result.wordScoreAwarded;
+      if (!isSundayPractice() && result.charScoreAwarded) this.stats.score += result.charScoreAwarded;
+      if (!isSundayPractice() && result.wordScoreAwarded) this.stats.score += result.wordScoreAwarded;
 
       // Increment combo streak
       this.stats.comboStreak++;
@@ -636,7 +637,7 @@ export class GameEngine {
       );
 
       if (isWaveComplete) {
-        const bonusScore = this.stats.wave * 150;
+        const bonusScore = isSundayPractice() ? 0 : this.stats.wave * 150;
         this.stats.score += bonusScore;
         this.setState('wave_transition');
         soundEngine.playWaveComplete();
