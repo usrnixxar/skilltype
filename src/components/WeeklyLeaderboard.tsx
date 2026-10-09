@@ -250,20 +250,19 @@ export const WeeklyLeaderboard: React.FC<WeeklyLeaderboardProps> = ({
             </div>
 
             <div className="leaderboard-scroll-area">
-              {entries.map((entry, index) => {
+              {entries.map((entry) => {
                 const isCurrentPlayer = activePlayer?.id === entry.playerId;
                 const isAdmin = entry.playerId === ADMIN_PLAYER_ID;
-                const displayRank = index + 1;
                 let rankClass = '';
-                let rankBadge = `${displayRank}`;
+                let rankBadge = isAdmin ? '👑' : `${entry.rank}`;
 
-                if (isAdmin || displayRank === 1) {
+                if (!isAdmin && entry.rank === 1) {
                   rankClass = 'rank-gold';
-                  rankBadge = isAdmin ? '👑 1' : '🥇 1';
-                } else if (displayRank === 2) {
+                  rankBadge = '🥇 1';
+                } else if (!isAdmin && entry.rank === 2) {
                   rankClass = 'rank-silver';
                   rankBadge = '🥈 2';
-                } else if (displayRank === 3) {
+                } else if (!isAdmin && entry.rank === 3) {
                   rankClass = 'rank-bronze';
                   rankBadge = '🥉 3';
                 }
