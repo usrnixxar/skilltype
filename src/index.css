@@ -3267,3 +3267,20 @@ kbd {
     flex-basis: 54px;
   }
 }
+
+/* Standalone admin card and native, keyboard-accessible image preview. */
+.admin-profile-strip { margin: 10px 0 14px; flex-shrink: 0; }
+.admin-profile-card { width: 100%; display: flex; align-items: center; gap: 12px; padding: 12px; border: 1px solid rgba(255,255,255,.12); border-radius: 16px; background: linear-gradient(135deg,#111827,#1f2937); color: white; text-align: left; cursor: pointer; }
+.admin-profile-card:hover { border-color: #f59e0b; }
+.admin-profile-card:focus-visible { outline: 2px solid #f59e0b; outline-offset: 3px; }
+.admin-profile-avatar { width: 64px; height: 64px; flex-shrink: 0; border: 2px solid #f59e0b; border-radius: 50%; object-fit: cover; object-position: center 25%; }
+.admin-profile-meta { display: flex; flex-direction: column; min-width: 0; gap: 4px; }
+.admin-name { font-size: 18px; }
+.admin-profile-subline { font-size: 12px; color: rgba(255,255,255,.72); }
+.admin-image-modal { position: fixed; inset: 0; width: 100vw; height: 100dvh; max-width: none; max-height: none; margin: 0; padding: 24px; border: 0; box-sizing: border-box; background: rgba(0,0,0,.9); }
+.admin-image-modal[open] { display: flex; align-items: center; justify-content: center; }
+.admin-image-modal::backdrop { background: rgba(0,0,0,.85); }
+.admin-image-modal-preview { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 12px; }
+.admin-image-modal-close { position: absolute; top: 16px; right: 16px; display: grid; place-items: center; width: 44px; height: 44px; border: 0; border-radius: 50%; background: white; color: #111827; cursor: pointer; }
+body:has(.admin-image-modal[open]) { overflow: hidden; }
+@media (max-width:640px) { .admin-profile-avatar { width:56px; height:56px; } .admin-name { font-size:16px; } .admin-profile-subline { font-size:11px; } }

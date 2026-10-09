@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import {
   fetchWeeklyLeaderboard,
   LeaderboardResponse,
@@ -15,6 +15,7 @@ import {
   Zap,
   Calendar,
   Clock,
+  X,
 } from 'lucide-react';
 
 interface WeeklyLeaderboardProps {
@@ -35,6 +36,8 @@ export const WeeklyLeaderboard: React.FC<WeeklyLeaderboardProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [resetCountdown, setResetCountdown] = useState<string>('');
   const [cheaters, setCheaters] = useState<CheaterEntry[]>([]);
+
+  const adminPreview = useRef<HTMLDialogElement>(null);
 
   // Update Saturday reset countdown timer every minute
   useEffect(() => {
@@ -106,12 +109,9 @@ export const WeeklyLeaderboard: React.FC<WeeklyLeaderboardProps> = ({
 
   const ADMIN_PLAYER_ID = '5c99b1c8-e130-4c27-a750-88e35362c581';
   const allEntries = data?.entries || [];
-  const entries = [...allEntries]
-    .sort((a, b) => {
-      if (a.playerId === ADMIN_PLAYER_ID) return -1;
-      if (b.playerId === ADMIN_PLAYER_ID) return 1;
-      return a.rank - b.rank;
-    })
+  const entries = allEntries
+    .filter((entry) => entry.playerId !== ADMIN_PLAYER_ID)
+    .sort((a, b) => a.rank - b.rank)
     .slice(0, 10);
   const playerRankEntry = data?.playerRank || null;
 
@@ -170,6 +170,31 @@ export const WeeklyLeaderboard: React.FC<WeeklyLeaderboardProps> = ({
           </div>
         </div>
       </div>
+
+      <div className="admin-profile-strip" aria-label="Admin profile">
+        <button type="button" className="admin-profile-card"
+          onClick={() => adminPreview.current?.showModal()}
+          aria-label="Open admin profile image" aria-haspopup="dialog">
+          <img src="/admin-profile.png" alt="Skillence Academy Admin"
+            className="admin-profile-avatar" draggable={false} />
+          <span className="admin-profile-meta">
+            <strong className="admin-name">👑 Admin</strong>
+            <span className="admin-profile-subline">Skillence Academy Admin</span>
+          </span>
+        </button>
+      </div>
+      <dialog ref={adminPreview} className="admin-image-modal"
+        aria-label="Admin profile image preview"
+        onClick={(event) => {
+          if (event.target === event.currentTarget) adminPreview.current?.close();
+        }}>
+        <button type="button" className="admin-image-modal-close" autoFocus
+          onClick={() => adminPreview.current?.close()} aria-label="Close image preview">
+          <X size={24} />
+        </button>
+        <img src="/admin-profile.png" alt="Skillence Academy Admin full preview"
+          className="admin-image-modal-preview" draggable={false} />
+      </dialog>
 
       {/* Tab Switcher: Weekly vs Today */}
       <div className="leaderboard-tabs-bar" role="tablist">
