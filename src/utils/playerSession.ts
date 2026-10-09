@@ -109,3 +109,10 @@ export async function logoutPlayer(profile: PlayerProfile): Promise<void> {
   await sessionRequest({ action: 'logout', sessionToken: profile.sessionToken });
   clearActivePlayer();
 }
+
+export async function fetchAdminPresence(sessionToken: string): Promise<string[]> {
+  const data = await sessionRequest({ action: 'presence', sessionToken });
+  return Array.isArray(data.onlinePlayerIds)
+    ? data.onlinePlayerIds.filter((id: unknown): id is string => typeof id === 'string')
+    : [];
+}

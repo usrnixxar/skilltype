@@ -7,7 +7,7 @@ import {
 import { PlayerProfile } from '../utils/playerProfile';
 import { subscribeToLeaderboardRealtime } from '../utils/supabaseClient';
 import { getTimeUntilSaturdayReset } from '../utils/dateUtils';
-import { fetchCheaters, CheaterEntry } from '../utils/playerSession';
+import { fetchCheaters, CheaterEntry, fetchAdminPresence } from '../utils/playerSession';
 import {
   Trophy,
   RotateCw,
@@ -18,6 +18,8 @@ import {
   Clock,
   X,
 } from 'lucide-react';
+
+const ADMIN_PLAYER_ID = '5c99b1c8-e130-4c27-a750-88e35362c581';
 
 interface WeeklyLeaderboardProps {
   activePlayer: PlayerProfile | null;
@@ -39,12 +41,47 @@ export const WeeklyLeaderboard: React.FC<WeeklyLeaderboardProps> = ({
   const [resetCountdown, setResetCountdown] = useState<string>('');
   const [cheaters, setCheaters] = useState<CheaterEntry[]>([]);
 
+  const isAdminViewer = activePlayer?.id === ADMIN_PLAYER_ID;
+  const viewerSessionToken = isAdminViewer ? activePlayer?.sessionToken : undefined;
+  const [presence, setPresence] = useState<{ token: string; online: Set<string> } | null>(null);
+
+  useEffect(() => {
+    setPresence(null);
+    if (!viewerSessionToken) return;
+    let stopped = false;
+    let busy = false;
+    const refreshPresence = async () => {
+      if (busy) return;
+      busy = true;
+      try {
+        const ids = await fetchAdminPresence(viewerSessionToken);
+        if (!stopped) setPresence({ token: viewerSessionToken, online: new Set(ids) });
+      } catch {
+        // Unknown status must not be misrepresented as offline.
+        if (!stopped) setPresence(null);
+      } finally { busy = false; }
+    };
+    void refreshPresence();
+    const timer = window.setInterval(refreshPresence, 15000);
+    const onFocus = () => { void refreshPresence(); };
+    window.addEventListener('focus', onFocus);
+    return () => { stopped = true; clearInterval(timer); window.removeEventListener('focus', onFocus); };
+  }, [viewerSessionToken]);
+
+  const renderPresence = (playerId: string) => {
+    if (!isAdminViewer || !viewerSessionToken || presence?.token !== viewerSessionToken) return null;
+    const online = presence.online.has(playerId);
+    return <span className={`player-presence-dot ${online ? 'is-online' : 'is-offline'}`}
+      role="img" aria-label={online ? 'Online' : 'Offline'} title={online ? 'Online' : 'Offline'} />;
+  };
   const flaggedNames = new Set(cheaters.map((entry) => entry.name.trim()));
-  const renderPlayerName = (name: string) => flaggedNames.has(name.trim()) ? (
-    <span title="Flagged by anti-cheat" style={{ color: '#f87171', backgroundColor: 'rgba(239, 68, 68, 0.14)', borderRadius: 4, padding: '1px 4px' }}>
-      <span role="img" aria-label="Cheater caution">⚠️</span>{' '}{name}
-    </span>
-  ) : name;
+  const renderPlayerName = (name: string, playerId: string) => <>
+    {flaggedNames.has(name.trim()) ? (
+      <span title="Flagged by anti-cheat" style={{ color: '#f87171', backgroundColor: 'rgba(239, 68, 68, 0.14)', borderRadius: 4, padding: '1px 4px' }}>
+        <span role="img" aria-label="Cheater caution">⚠️</span>{' '}{name}
+      </span>
+    ) : name}{renderPresence(playerId)}
+  </>;
 
   const adminPreview = useRef<HTMLDialogElement>(null);
 
@@ -116,7 +153,6 @@ export const WeeklyLeaderboard: React.FC<WeeklyLeaderboardProps> = ({
     return () => clearInterval(timer);
   }, [activePlayer?.id, activeTab]);
 
-  const ADMIN_PLAYER_ID = '5c99b1c8-e130-4c27-a750-88e35362c581';
   const allEntries = data?.entries || [];
   const entries = allEntries
     .filter((entry) => entry.playerId !== ADMIN_PLAYER_ID)
@@ -187,7 +223,7 @@ export const WeeklyLeaderboard: React.FC<WeeklyLeaderboardProps> = ({
           <img src="/admin-profile.png" alt="Skillence Academy Admin"
             className="admin-profile-avatar" draggable={false} />
           <span className="admin-profile-meta">
-            <strong className="admin-name">👑 Admin</strong>
+            <strong className="admin-name">👑 Admin{renderPresence(ADMIN_PLAYER_ID)}</strong>
             <span className="admin-profile-subline">Skillence Academy Admin</span>
           </span>
         </button>
@@ -331,7 +367,7 @@ export const WeeklyLeaderboard: React.FC<WeeklyLeaderboardProps> = ({
                             draggable={false}
                           />
                         )}
-                        {isAdmin ? 'Admin' : renderPlayerName(entry.player_name || entry.playerName || entry.name || 'Unnamed Player')}
+                        {isAdmin ? 'Admin' : renderPlayerName(entry.player_name || entry.playerName || entry.name || 'Unnamed Player', entry.playerId)}
                       </span>
                       {isCurrentPlayer && <span className="you-pill">YOU</span>}
                       <small className="player-enrollment">{isAdmin ? 'Admin' : (entry.playerType === 'student' ? 'Student' : 'Not a student')}</small>
@@ -357,7 +393,7 @@ export const WeeklyLeaderboard: React.FC<WeeklyLeaderboardProps> = ({
                   </div>
                   <div className="col-player" title={playerRankEntry.player_name || playerRankEntry.playerName}>
                     <span className="player-name-text">
-                      {renderPlayerName(playerRankEntry.player_name || playerRankEntry.playerName || playerRankEntry.name || 'Unnamed Player')}
+                      {renderPlayerName(playerRankEntry.player_name || playerRankEntry.playerName || playerRankEntry.name || 'Unnamed Player', playerRankEntry.playerId)}
                     </span>
                     <span className="you-pill">YOU</span>
                     <small className="player-enrollment">{playerRankEntry.playerType === 'student' ? 'Student' : 'Not a student'}</small>

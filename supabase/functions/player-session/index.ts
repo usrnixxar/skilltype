@@ -74,6 +74,20 @@ Deno.serve(async (req: Request) => {
       });
     }
 
+    if (body.action === 'presence') {
+      if (typeof body.sessionToken !== 'string' || !/^[a-f0-9]{64}$/.test(body.sessionToken)) {
+        return reply({ error: 'Please log in again' }, 401);
+      }
+      const { data, error } = await admin.rpc('get_admin_player_presence', {
+        p_hash: await hash(body.sessionToken),
+      });
+      if (error) {
+        return reply({ error: error.code === '42501' ? 'Admin access required' : 'Presence unavailable' },
+          error.code === '42501' ? 403 : error.code === '28000' ? 401 : 503);
+      }
+      return reply({ success: true, ...data });
+    }
+
     if (body.action === 'logout' || body.action === 'validate') {
       if (
         typeof body.sessionToken !== 'string' ||
@@ -96,9 +110,10 @@ Deno.serve(async (req: Request) => {
 
       const { data, error } = await admin
         .from('player_sessions')
-        .select('player_id')
+        .update({ last_seen_at: new Date().toISOString() })
         .eq('token_hash', tokenHash)
         .gt('expires_at', new Date().toISOString())
+        .select('player_id')
         .maybeSingle();
 
       return error
