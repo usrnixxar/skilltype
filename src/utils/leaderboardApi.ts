@@ -8,6 +8,8 @@ import { getSupabaseClient } from './supabaseClient';
 import { getDayId, getWeekId } from './dateUtils';
 import { sanitizePlayerName } from './playerProfile';
 
+const ADMIN_PLAYER_ID = '5c99b1c8-e130-4c27-a750-88e35362c581';
+
 export interface LeaderboardEntry {
   playerType?: 'student' | 'guest';
   rank: number;
@@ -168,7 +170,7 @@ export async function fetchWeeklyLeaderboard(
       const { data, error } = await query;
       if (!error && Array.isArray(data)) {
         let playerRankEntry: LeaderboardEntry | null = null;
-        const entries: LeaderboardEntry[] = data.map((row: any, index: number) => {
+        const entries: LeaderboardEntry[] = data.filter((row: any) => (row.player_id || row.playerId) !== ADMIN_PLAYER_ID).map((row: any, index: number) => {
           const points = type === 'daily' ? Number(row.daily_points) : Number(row.weekly_points);
           const safeName = (row.player_name || row.playerName || row.name || '').trim() || 'Unnamed Player';
           const pId = row.player_id || row.playerId || '';
@@ -241,12 +243,12 @@ export async function fetchWeeklyLeaderboard(
 
   const responseJson = (await res.json()) as LeaderboardResponse;
   if (responseJson && Array.isArray(responseJson.entries)) {
-    responseJson.entries = responseJson.entries.map((entry: any, index: number) => {
+    responseJson.entries = responseJson.entries.filter((entry) => (entry.player_id || entry.playerId) !== ADMIN_PLAYER_ID).map((entry: any, index: number) => {
       const safeName = (entry.player_name || entry.playerName || entry.name || '').trim() || 'Unnamed Player';
       const pId = entry.player_id || entry.playerId || '';
       return {
         ...entry,
-        rank: entry.rank ?? index + 1,
+        rank: index + 1,
         playerId: pId,
         player_id: pId,
         playerName: safeName,
@@ -254,6 +256,8 @@ export async function fetchWeeklyLeaderboard(
         name: safeName,
       };
     });
+    responseJson.totalEligible = responseJson.entries.length;
+    responseJson.playerRank = responseJson.entries.find((entry) => entry.playerId === playerId) || null;
   }
 
   return responseJson;
