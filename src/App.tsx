@@ -1,5 +1,5 @@
 import { isSundayPractice } from './utils/competitionClock';
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { GameEngine, GameEngineState } from './game/GameEngine';
 import { GameConfiguration, GameStats } from './game/types';
 import {
@@ -33,13 +33,14 @@ import { ResultsModal } from './components/ResultsModal';
 import { PracticeSetupModal } from './components/PracticeSetupModal';
 import { RecordsModal } from './components/RecordsModal';
 import { SettingsModal } from './components/SettingsModal';
-import { MobileInputHelper } from './components/MobileInputHelper';
+import { useKeyboardGate } from './hooks/useKeyboardGate';
 import { LiveStatsPanel } from './components/LiveStatsPanel';
 import { WeeklyLeaderboard } from './components/WeeklyLeaderboard';
 import { logoutPlayer, validatePlayerSession } from './utils/playerSession';
 import { WelcomeModal } from './components/WelcomeModal';
 
 export const App: React.FC = () => {
+  const { isMobile, isKeyboardCheckOpen, withKeyboard, cancelKeyboardCheck, keyboardGate } = useKeyboardGate();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const engineRef = useRef<GameEngine | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -60,6 +61,7 @@ export const App: React.FC = () => {
     setLoggingOut(true); setLogoutError('');
     try {
       await logoutPlayer(activePlayer);
+      cancelKeyboardCheck();
       pendingProfileStartRef.current = null;
       retryPayloadRef.current = null;
       activeSessionIdRef.current = generateUuid();
@@ -77,6 +79,7 @@ export const App: React.FC = () => {
       if (stopped) return;
       engineRef.current?.reset();
       clearActivePlayer();
+      cancelKeyboardCheck();
       pendingProfileStartRef.current = null;
       retryPayloadRef.current = null;
       activeSessionIdRef.current = generateUuid();
@@ -117,6 +120,7 @@ export const App: React.FC = () => {
     const syncProfile = (event: StorageEvent) => {
       if (event.key !== 'skilltype_active_player' && event.key !== null) return;
       engineRef.current?.reset();
+      cancelKeyboardCheck();
       pendingProfileStartRef.current = null; retryPayloadRef.current = null;
       activeSessionIdRef.current = generateUuid();
       setActivePlayer(loadActivePlayer()); setAppState('menu'); setModalOpen('none');
@@ -150,6 +154,7 @@ export const App: React.FC = () => {
 
       if (sessionExpired) {
         clearActivePlayer();
+        cancelKeyboardCheck();
         pendingProfileStartRef.current = null;
         retryPayloadRef.current = null;
         activeSessionIdRef.current = generateUuid();
@@ -329,8 +334,12 @@ export const App: React.FC = () => {
     // not the old instance that the effect cleanup is about to destroy.
     if (pendingProfileStartRef.current) {
       engine.updateConfig(pendingProfileStartRef.current);
+      cancelKeyboardCheck();
       pendingProfileStartRef.current = null;
-      engine.startGame();
+      withKeyboard(() => {
+        setAppState('gameplay');
+        engine.startGame();
+      });
     }
 
     const handleResize = () => engine.resize();
@@ -381,6 +390,7 @@ export const App: React.FC = () => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // If any modal is open or on main menu, allow normal keyboard navigation
       if (
+        isKeyboardCheckOpen ||
         modalOpen !== 'none' ||
         appState !== 'gameplay' ||
         welcomeModalOpen ||
@@ -389,6 +399,12 @@ export const App: React.FC = () => {
         return;
       }
 
+      if (isMobile && (e.isComposing || e.keyCode === 229 || !e.code || !e.isTrusted)) return;
+      if (isMobile && engineRef.current?.getState() === 'paused' && e.key === 'Escape') {
+        e.preventDefault();
+        withKeyboard(() => engineRef.current?.resume());
+        return;
+      }
       if (engineRef.current) {
         engineRef.current.handleKeyDown(e);
       }
@@ -396,26 +412,11 @@ export const App: React.FC = () => {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [modalOpen, appState, welcomeModalOpen, activePlayer]);
-
-  // Mobile virtual input character forwarder
-  const handleCharacterTyped = useCallback(
-    (char: string) => {
-      if (
-        engineRef.current &&
-        appState === 'gameplay' &&
-        modalOpen === 'none' &&
-        !welcomeModalOpen
-      ) {
-        engineRef.current.processTypingCharacter(char);
-      }
-    },
-    [appState, modalOpen, welcomeModalOpen]
-  );
+  }, [modalOpen, appState, welcomeModalOpen, activePlayer, isMobile, isKeyboardCheckOpen, withKeyboard]);
 
   // --- Actions ---
 
-  const startArcadeGame = () => {
+  const startArcadeGame = () => withKeyboard(() => {
     if (!activePlayer) {
       setWelcomeModalOpen(true);
       return;
@@ -440,7 +441,7 @@ export const App: React.FC = () => {
       });
       engineRef.current.startGame();
     }
-  };
+  });
 
   const startPracticeGame = (practiceConfig: {
     category: WordCategory;
@@ -448,7 +449,7 @@ export const App: React.FC = () => {
     practiceTimedMinutes: number;
     practiceRelaxed: boolean;
     practicePace: 'slow' | 'normal' | 'fast';
-  }) => {
+  }) => withKeyboard(() => {
     if (!activePlayer) {
       setWelcomeModalOpen(true);
       return;
@@ -483,18 +484,18 @@ export const App: React.FC = () => {
       });
       engineRef.current.startGame();
     }
-  };
+  });
 
   const handlePauseToggle = () => {
     if (!engineRef.current) return;
     if (engineState === 'playing') {
       engineRef.current.pause();
     } else if (engineState === 'paused') {
-      engineRef.current.resume();
+      withKeyboard(() => engineRef.current?.resume());
     }
   };
 
-  const handleRestart = () => {
+  const handleRestart = () => withKeyboard(() => {
     activeSessionIdRef.current = generateUuid();
     setSaveError(null);
     setIsSavingRun(false);
@@ -503,7 +504,7 @@ export const App: React.FC = () => {
     if (engineRef.current) {
       engineRef.current.startGame();
     }
-  };
+  });
 
   const handleReturnToMenu = () => {
     setModalOpen('none');
@@ -590,12 +591,6 @@ export const App: React.FC = () => {
               />
             )}
 
-            {/* Mobile Input Helper */}
-            <MobileInputHelper
-              isPlaying={appState === 'gameplay' && engineState === 'playing'}
-              onCharacterTyped={handleCharacterTyped}
-            />
-
             {/* Main Menu Overlay */}
             {appState === 'menu' && (
               <MainMenu
@@ -625,7 +620,7 @@ export const App: React.FC = () => {
                 engineState === 'paused' &&
                 modalOpen === 'none'
               }
-              onResume={() => engineRef.current?.resume()}
+              onResume={() => withKeyboard(() => engineRef.current?.resume())}
               onRestart={handleRestart}
               onOpenSettings={() => setModalOpen('settings')}
               onReturnToMenu={handleReturnToMenu}
@@ -690,6 +685,7 @@ export const App: React.FC = () => {
         </aside>
       </div>
 
+      {keyboardGate}
       {logoutError && <div className="session-error" role="alert">{logoutError}</div>}
       {/* Name Entry Welcome & Profile Switching Screen */}
       <WelcomeModal
@@ -705,7 +701,7 @@ export const App: React.FC = () => {
           // If on main menu, automatically launch arcade game
           if (appState === 'menu') {
             setCurrentMode('arcade');
-            setAppState('gameplay');
+            if (!isMobile) setAppState('gameplay');
             setModalOpen('none');
             activeSessionIdRef.current = generateUuid();
             setSaveError(null);
