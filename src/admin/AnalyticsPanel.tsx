@@ -3,7 +3,7 @@ import { adminRequest } from '../utils/adminApi';
 
 type Period='daily'|'weekly'|'monthly';
 interface Visit{visitor_id:string;visit_day:string}
-interface Detail{profile:{id:string;name:string;kind:string;created_at:string};online:boolean;lastSeen:string|null;recentActivity:string[];loginHistory:string[]}
+interface Detail{profile:{id:string;name:string;kind:string;created_at:string;email?:string|null};online:boolean;lastSeen:string|null;recentActivity:string[];loginHistory:string[]}
 const formatTime=(s:string|null)=>s?new Date(s).toLocaleString('en-IN',{timeZone:'Asia/Kolkata',dateStyle:'medium',timeStyle:'short'}):'No active session recorded';
 export function AnalyticsPanel({token}:{token:string}){
  const [visits,setVisits]=useState<Visit[]>([]);
@@ -36,6 +36,6 @@ export function PlayerDetail({token,playerId,onClose}:{token:string;playerId:str
  useEffect(()=>{let active=true;const load=()=>{adminRequest(token,'player-detail',{playerId}).then(r=>{if(active)setDetail(r)}).catch(e=>{if(active)setError(e.message)})};load();const timer=setInterval(load,30000);return()=>{active=false;clearInterval(timer)}},[token,playerId]);
  return <div className="admin-detail-backdrop" onMouseDown={e=>{if(e.target===e.currentTarget)onClose()}}><section role="dialog" aria-modal="true" aria-label="Player activity" className="admin-surface admin-detail-modal"><button className="admin-button" onClick={onClose}>Close</button><h2>{detail?.profile.name||'Player Details'}</h2>
  {error&&<p role="alert">{error}</p>}
- {detail&&<><p>Account type: {detail.profile.kind}</p><p><span className={'activity-dot '+(detail.online?'online':'offline')}/> {detail.online?'Online':'Offline'}</p><p>Account created: {formatTime(detail.profile.created_at)}</p><p>Last active: {formatTime(detail.lastSeen)}</p><h3>Login history (IST)</h3>{detail.loginHistory?.length?detail.loginHistory.map((x,i)=><p key={'login'+i}>{formatTime(x)}</p>):<p>No historical login events recorded yet.</p>}<h3>Recent activity</h3><p>Exact historical login times were not previously recorded. The following are recorded session activity timestamps.</p>{detail.recentActivity.map((x,i)=><p key={i}>{formatTime(x)}</p>)}<p>PINs/passwords are not displayed. Use a credential-reset workflow to change access.</p></>}
+ {detail&&<><p>Account type: {detail.profile.kind}</p>{detail.profile.email&&<p>Registered email: {detail.profile.email}</p>}<p><span className={'activity-dot '+(detail.online?'online':'offline')}/> {detail.online?'Online':'Offline'}</p><p>Account created: {formatTime(detail.profile.created_at)}</p><p>Last active: {formatTime(detail.lastSeen)}</p><h3>Login history (IST)</h3>{detail.loginHistory?.length?detail.loginHistory.map((x,i)=><p key={'login'+i}>{formatTime(x)}</p>):<p>No historical login events recorded yet.</p>}<h3>Recent activity</h3><p>Exact historical login times were not previously recorded. The following are recorded session activity timestamps.</p>{detail.recentActivity.map((x,i)=><p key={i}>{formatTime(x)}</p>)}<p>PINs/passwords are not displayed. Use a credential-reset workflow to change access.</p></>}
  </section></div>
 }
