@@ -35,6 +35,7 @@ import { SettingsModal } from './components/SettingsModal';
 import { useKeyboardGate } from './hooks/useKeyboardGate';
 import { LiveStatsPanel } from './components/LiveStatsPanel';
 import { WeeklyLeaderboard } from './components/WeeklyLeaderboard';
+import { wheelRequest } from './utils/wheelApi';
 import { logoutPlayer, validatePlayerSession } from './utils/playerSession';
 import { WelcomeModal } from './components/WelcomeModal';
 
@@ -133,6 +134,7 @@ export const App: React.FC = () => {
   const [isSavingRun, setIsSavingRun] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [lastSavedRunId, setLastSavedRunId] = useState<string | null>(null);
+  const [wheelClaimRun, setWheelClaimRun] = useState<{gameSessionId:string;wave:number}|null>(null);
 
   const saveLeaderboardRun = async (payload: SubmitRunPayload) => {
     const id = payload.gameSessionId!;
@@ -143,6 +145,9 @@ export const App: React.FC = () => {
     setIsSavingRun(true);
     try {
       await submitGameRun(payload);
+      if ((payload.wave ?? 0) >= 11 && activePlayer?.type !== 'guest') {
+        setWheelClaimRun({ gameSessionId: id, wave: payload.wave! });
+      }
       if (retryPayloadRef.current?.gameSessionId === id) retryPayloadRef.current = null;
       setLastSavedRunId(id);
     } catch (error) {
