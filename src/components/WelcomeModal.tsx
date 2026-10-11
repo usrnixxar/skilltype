@@ -76,6 +76,7 @@ export const WelcomeModal: React.FC<WelcomeModalProps> = ({ isOpen, activePlayer
         {error && <div className="form-error-msg" role="alert">{error}</div>}
         <button type="submit" className="btn btn-primary btn-welcome-start" disabled={busy}><Play size={18} /><span>{busy ? 'Checking…' : 'Log in & Play'}</span></button>
       </form>}
+      <div className="welcome-admin-link"><a href="/admin">Admin login</a></div>
     </div>
   </div>;
 };

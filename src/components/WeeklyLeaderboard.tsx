@@ -1,3 +1,4 @@
+import { GiftSlider } from './GiftSlider';
 import { useCompetition } from '../context/CompetitionContext';
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import {
@@ -417,6 +418,8 @@ export const WeeklyLeaderboard: React.FC<WeeklyLeaderboardProps> = ({
         )}
       </div>
 
+      {isAdminViewer && <a className="admin-console-link" href="/admin">Open Admin Panel</a>}
+
       {/* Footer Section: Highlight Current Player or Prompt to Play */}
       <div className="leaderboard-footer-section">
         {hasPlayerPlayed ? (
@@ -441,6 +444,7 @@ export const WeeklyLeaderboard: React.FC<WeeklyLeaderboardProps> = ({
           </div>
         )}
       </div>
+      <GiftSlider />
     </div>
   );
 };

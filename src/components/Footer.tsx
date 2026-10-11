@@ -13,6 +13,7 @@ export const Footer: React.FC = () => {
         </span>
         <span className="footer-sep">•</span>
         <span className="footer-controls-hint">Desktop Keyboard recommended • [ESC] Pause • [SPACE] Pulse</span>
+        <a href="/admin" className="footer-admin-link">Admin login</a>
       </div>
     </footer>
   );
