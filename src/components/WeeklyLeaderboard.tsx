@@ -186,7 +186,7 @@ export const WeeklyLeaderboard: React.FC<WeeklyLeaderboardProps> = ({
             <h2 className="panel-title">
               {activeTab === 'weekly' ? 'WEEKLY LEADERBOARD' : 'DAILY LEADERBOARD'}
             </h2>
-            <button type="button" className="wheel-open-button" aria-label="Open Spin Wheel" title="Spin Wheel" onClick={() => setWheelOpen(true)}><img src="/spin-wheel-icon.svg" alt="" className="wheel-open-image" draggable={false}/>{wheelClaimRun&&<span className="wheel-ready-dot"/>}</button>
+            <button type="button" className="wheel-open-button" aria-label="Open Spin Wheel" title="Spin Wheel" onClick={() => setWheelOpen(true)}><img src="/spin-wheel-transparent.svg" alt="" className="wheel-open-image" draggable={false}/>{wheelClaimRun&&<span className="wheel-ready-dot"/>}</button>
           </div>
           <p className="panel-subtitle">
             {activeTab === 'weekly' ? (
