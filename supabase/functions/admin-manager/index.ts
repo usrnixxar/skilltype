@@ -36,6 +36,21 @@ Deno.serve(async (req: Request) => {
     })});
     if(body.action==='delete-player')return reply({success:true,...await rpc('delete-player',{playerId:body.playerId,confirm:body.confirm})});
     if(body.action==='gifts')return reply({success:true,...await rpc('gifts')});
+    if(body.action==='analytics'){
+      const {data:visits,error:visitsError}=await client.from('site_visitors').select('visitor_id,visit_day').gte('visit_day',new Date(Date.now()-95*86400000).toISOString().slice(0,10)).limit(100000);
+      if(visitsError)return reply({error:'Analytics unavailable'},503);
+      return reply({success:true,visits});
+    }
+    if(body.action==='player-detail'){
+      if(typeof body.playerId!=='string'||!uuid.test(body.playerId))return reply({error:'Invalid player'},400);
+      const {data:profile,error:profileError}=await client.from('player_profiles').select('id,name,kind,created_at').eq('id',body.playerId).maybeSingle();
+      if(profileError||!profile)return reply({error:'Player not found'},404);
+      const {data:sessions,error:sessionError}=await client.from('player_sessions').select('last_seen_at,expires_at').eq('player_id',profile.id).order('last_seen_at',{ascending:false}).limit(10);
+      if(sessionError)return reply({error:'Activity unavailable'},503);
+      const now=Date.now();
+      return reply({success:true,profile,online:(sessions||[]).some((row:any)=>Date.parse(row.expires_at)>now&&Date.parse(row.last_seen_at)>now-90000),lastSeen:sessions?.[0]?.last_seen_at||null,recentActivity:(sessions||[]).map((v:any)=>v.last_seen_at)});
+    }
+
     if(body.action==='wheel-prizes'){
       const {data,error}=await client.from('spin_prizes').select('slot,title,image_path,chance').order('slot');
       if(error)return reply({error:'Unable to load wheel prizes'},503);
