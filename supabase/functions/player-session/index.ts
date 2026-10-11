@@ -58,13 +58,13 @@ Deno.serve(async (req: Request) => {
     );
 
     if(body.action==='register-guest'||(body.action==='login'&&body.kind==='guest')){
-      const name=typeof body.name==='string'?body.name.trim().replace(/\\s+/g,' '):'';
+      const name=typeof body.name==='string'?body.name.trim().replace(/\s+/g,' '):'';
       const pin=body.pin;
       const email=typeof body.email==='string'?body.email.trim().toLowerCase():'';
-      if(name.length<2||name.length>25||typeof pin!=='string'||!/^\\d{6}$/.test(pin))return reply({error:'Enter your name and a 6-digit PIN'},400);
+      if(name.length<2||name.length>25||typeof pin!=='string'||!/^\d{6}$/.test(pin))return reply({error:'Enter your name and a 6-digit PIN'},400);
       const normalizedName=name.toLowerCase();
       if(body.action==='register-guest'){
-        if(!/^[^ @]+@[^ @]+\\.[^ @]+$/.test(email)||email.length>180)return reply({error:'Enter a valid email address'},400);
+        if(!/^[^ @]+@[^ @]+\.[^ @]+$/.test(email)||email.length>180)return reply({error:'Enter a valid email address'},400);
         const {data:existing}=await admin.from('guest_credentials').select('player_id').or(`email.eq.${email},login_name.eq.${normalizedName}`).limit(1);
         if(existing?.length)return reply({error:'Name or email already registered. Please log in.'},409);
         const {data:profile,error:profileError}=await admin.from('player_profiles').insert({name,kind:'guest'}).select('id').single();
