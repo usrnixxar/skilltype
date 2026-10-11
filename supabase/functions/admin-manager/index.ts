@@ -47,8 +47,9 @@ Deno.serve(async (req: Request) => {
       if(profileError||!profile)return reply({error:'Player not found'},404);
       const {data:sessions,error:sessionError}=await client.from('player_sessions').select('last_seen_at,expires_at').eq('player_id',profile.id).order('last_seen_at',{ascending:false}).limit(10);
       if(sessionError)return reply({error:'Activity unavailable'},503);
+      const {data:loginEvents}=await client.from('player_login_events').select('logged_in_at').eq('player_id',profile.id).order('logged_in_at',{ascending:false}).limit(10);
       const now=Date.now();
-      return reply({success:true,profile,online:(sessions||[]).some((row:any)=>Date.parse(row.expires_at)>now&&Date.parse(row.last_seen_at)>now-90000),lastSeen:sessions?.[0]?.last_seen_at||null,recentActivity:(sessions||[]).map((v:any)=>v.last_seen_at)});
+      return reply({success:true,profile,online:(sessions||[]).some((row:any)=>Date.parse(row.expires_at)>now&&Date.parse(row.last_seen_at)>now-90000),lastSeen:sessions?.[0]?.last_seen_at||null,recentActivity:(sessions||[]).map((v:any)=>v.last_seen_at),loginHistory:(loginEvents||[]).map((v:any)=>v.logged_in_at)});
     }
 
     if(body.action==='wheel-prizes'){
