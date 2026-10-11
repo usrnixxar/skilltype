@@ -39,7 +39,8 @@ Deno.serve(async (req: Request) => {
       if(ids.length){
         const {data:sessions}=await client.from('player_sessions').select('player_id,last_seen_at,expires_at').in('player_id',ids);
         const now=Date.now();
-        data.players=data.players.map((p:any)=>({...p,online:(sessions||[]).some((row:any)=>row.player_id===p.id&&Date.parse(row.expires_at)>now&&Date.parse(row.last_seen_at)>now-90000)}));
+        const {data:contacts}=await client.from('guest_credentials').select('player_id,email').in('player_id',ids);
+        data.players=data.players.map((p:any)=>({...p,email:contacts?.find((c:any)=>c.player_id===p.id)?.email||null,online:(sessions||[]).some((row:any)=>row.player_id===p.id&&Date.parse(row.expires_at)>now&&Date.parse(row.last_seen_at)>now-90000)}));
       }
       return reply({success:true,...data});
     }
