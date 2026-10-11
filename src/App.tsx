@@ -1,4 +1,3 @@
-import { isSundayPractice } from './utils/competitionClock';
 import React, { useEffect, useRef, useState } from 'react';
 import { GameEngine, GameEngineState } from './game/GameEngine';
 import { GameConfiguration, GameStats } from './game/types';
@@ -290,7 +289,7 @@ export const App: React.FC = () => {
         const { isNewPersonalBest: isPb, updatedRecords } = recordCompletedSession({
           mode: currentMode,
           difficulty: settings.difficulty,
-          score: isSundayPractice() ? 0 : finalStats.score,
+          score: finalStats.score,
           wpm: finalWpm,
           accuracy: finalAccuracy,
           wave: finalStats.wave,
@@ -319,7 +318,7 @@ export const App: React.FC = () => {
         if (finalStats.score > 0 || finalStats.wordsCompleted > 0) {
           await saveLeaderboardRun({
             gameSessionId: sessionId, runId: sessionId, playerId, playerName, sessionToken: activePlayer?.sessionToken,
-            wpm: finalWpm, score: isSundayPractice() ? 0 : finalStats.score, accuracy: finalAccuracy,
+            wpm: finalWpm, score: finalStats.score, accuracy: finalAccuracy,
             wave: finalStats.wave, wordsCompleted: finalStats.wordsCompleted,
             durationSeconds: Math.floor(finalStats.activePlayTimeMs / 1000),
           });
