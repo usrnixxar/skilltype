@@ -61,7 +61,8 @@ export async function loginPlayer(
   kind: 'student' | 'guest',
   name: string,
   pin: string,
-  forceLogoutOther = false
+  forceLogoutOther = false,
+  email = ''
 ): Promise<PlayerProfile> {
   if (loadActivePlayer()) throw new Error('Log out before changing profile.');
 
@@ -70,6 +71,7 @@ export async function loginPlayer(
     kind,
     name,
     pin,
+    email,
     deviceId: getOrCreateDeviceId(),
     forceLogoutOther,
   });
@@ -85,6 +87,10 @@ export async function loginPlayer(
   }
 
   return data.profile;
+}
+
+export async function registerGuest(name:string,email:string,pin:string):Promise<void>{
+  await sessionRequest({action:'register-guest',name,email,pin});
 }
 
 export async function validatePlayerSession(profile: PlayerProfile): Promise<boolean> {
