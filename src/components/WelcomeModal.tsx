@@ -27,8 +27,9 @@ export const WelcomeModal: React.FC<WelcomeModalProps> = ({ isOpen, activePlayer
   const [email,setEmail]=useState('');
   const [registerMode,setRegisterMode]=useState(false);
   const [error, setError] = useState('');
+  const [notice,setNotice]=useState('');
   const [busy, setBusy] = useState(false);
-  useEffect(() => { if (isOpen) { setKind(null); setName(''); setPin('');setEmail('');setRegisterMode(false); setError(''); } }, [isOpen]);
+  useEffect(() => { if (isOpen) { setKind(null); setName(''); setPin('');setEmail('');setRegisterMode(false); setError('');setNotice(''); } }, [isOpen]);
   if (!isOpen || activePlayer) return null;
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -36,11 +37,11 @@ export const WelcomeModal: React.FC<WelcomeModalProps> = ({ isOpen, activePlayer
     const result = validatePlayerName(name);
     if (!result.valid) { setError(result.error || 'Enter your name'); return; }
     if (kind === 'student' && !/^\d{6}$/.test(pin)) { setError('Enter your 6-digit student PIN'); return; }
-    setBusy(true); setError('');
+    setBusy(true); setError('');setNotice('');
     try {
       if(kind==='guest'&&registerMode){
         await registerGuest(result.trimmedName,email,pin);
-        setRegisterMode(false);setError('Registered successfully. Now log in with your name and PIN.');
+        setRegisterMode(false);setNotice('Registered successfully. Now log in with your name and PIN.');
         return;
       }
       onSavePlayerAndStart(await loginPlayer(kind, result.trimmedName, pin));
@@ -99,6 +100,7 @@ export const WelcomeModal: React.FC<WelcomeModalProps> = ({ isOpen, activePlayer
           <input id="student-pin" className="text-input player-name-input" type="text" inputMode="numeric" pattern="[0-9]{6}" maxLength={6} value={pin} onChange={e => setPin(e.target.value.replace(/\D/g, ''))} required disabled={busy} placeholder="6-digit PIN from your teacher" autoComplete="off" />
           <p className="form-hint">Use your registered name and six-digit PIN. Keep your PIN private.</p></div>}
         <p className="form-hint">{kind === 'guest' ? 'Register once with name, email and PIN. Then log in with the same name and PIN. Names remain masked on the leaderboard.' : 'Your full registered name is shown publicly and your scores stay linked to your student profile.'}</p>
+        {notice&&<div className="form-hint" role="status">{notice}</div>}
         {error && <div className="form-error-msg" role="alert">{error}</div>}
         <button type="submit" className="btn btn-primary btn-welcome-start" disabled={busy}><Play size={18} /><span>{busy ? 'Checking…' : kind==='guest'&&registerMode?'Register Guest':'Log in & Play'}</span></button>
       </form>}
