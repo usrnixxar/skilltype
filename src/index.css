@@ -3590,3 +3590,9 @@ body:has(.admin-image-modal[open]) { overflow: hidden; }
 .welcome-screen .welcome-form button[type="submit"] { height:auto; min-height:0; padding:10px; transition:filter .18s ease,transform .18s ease; }
 .welcome-screen .welcome-form button[type="submit"]:hover:not(:disabled) { filter:brightness(1.12); transform:translateY(-2px); }
 @media(max-width:380px) { .welcome-screen .login-choice { gap:3px; padding:10px; } .welcome-screen .login-choices { gap:8px; } }
+
+/* Guest form: two equal bottom actions for login, single full-width action for signup. */
+.welcome-screen .welcome-guest-actions { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:10px; width:100%; }
+.welcome-screen .welcome-guest-actions .btn-welcome-start { box-sizing:border-box; min-width:0; width:100%; margin:0; padding:10px; height:auto; justify-content:center; }
+.welcome-screen .welcome-form > .btn-welcome-start { box-sizing:border-box; width:100%; padding:10px; }
+@media(max-width:400px) { .welcome-screen .welcome-guest-actions { gap:8px; } }
