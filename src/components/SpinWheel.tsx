@@ -74,7 +74,7 @@ export function SpinWheel({ open, onClose, activePlayer, claimRun, onClaimed }: 
     <div className="spin-wheel-stage">
       <div className="spin-pointer">▼</div>
       <div className="spin-wheel-disc" style={{transform:`rotate(${angle}deg)`,background:`conic-gradient(${COLORS.map((c,i)=>`${c} ${i*45}deg ${(i+1)*45}deg`).join(',')})`}}>
-        {slots.map((p,i)=><div className="spin-wheel-slot" key={i} style={{transform:`rotate(${i*45+22.5}deg) translateY(-104px) rotate(${-(i*45+22.5)}deg)`}}>
+        {slots.map((p,i)=><div className="spin-wheel-slot" key={i} style={{transform:`rotate(${i*45+22.5}deg) translateY(calc(-1 * var(--spin-slot-radius, 104px))) rotate(${-(i*45+22.5)}deg)`}}>
          {p?.image_path&&<img src={giftImageUrl(p.image_path)} alt="" draggable={false}/>}
          <span>{p?.title||'Try Again'}</span>
         </div>)}
