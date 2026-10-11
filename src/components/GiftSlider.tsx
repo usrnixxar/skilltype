@@ -10,7 +10,13 @@ export function GiftSlider() {
   useEffect(() => {
     let stopped = false;
     const refresh = async () => {
-      try { const rows = await fetchGiftSlides(); if (!stopped) setGifts(rows); }
+      try { const rows = await fetchGiftSlides(); if (!stopped) setGifts(previous => {
+        if (JSON.stringify(previous.map(g => g.id).sort()) === JSON.stringify(rows.map(g => g.id).sort()))
+          return previous.map(g => rows.find(row => row.id === g.id)!);
+        const shuffled = [...rows];
+        for (let i = shuffled.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]; }
+        return shuffled;
+      }); }
       catch { /* Keep the last successful list during temporary network errors. */ }
     };
     void refresh();

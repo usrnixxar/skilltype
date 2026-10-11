@@ -1,7 +1,8 @@
 import { getSupabaseClient } from './supabaseClient';
 export const ADMIN_PLAYER_ID = '5c99b1c8-e130-4c27-a750-88e35362c581';
 export interface ManagedPlayer { id: string; name: string; kind: string; points: number; created_at: string; }
-export interface GiftSlide { id: string; title: string; image_path: string; enabled: boolean; sort_order: number; created_at: string; }
+export type ProductSection = 'showcase' | 'achievement';
+export interface GiftSlide { section: ProductSection; id: string; title: string; image_path: string; enabled: boolean; sort_order: number; created_at: string; }
 export async function adminRequest(sessionToken: string, action: string, payload: Record<string, unknown> = {}) {
   const client = getSupabaseClient();
   if (!client) throw new Error('Admin service is not configured.');
@@ -16,11 +17,11 @@ export async function adminRequest(sessionToken: string, action: string, payload
 export function giftImageUrl(path: string) {
   return getSupabaseClient()?.storage.from('gift-images').getPublicUrl(path).data.publicUrl || '';
 }
-export async function fetchGiftSlides(): Promise<GiftSlide[]> {
+export async function fetchGiftSlides(section: ProductSection = 'showcase'): Promise<GiftSlide[]> {
   const client = getSupabaseClient();
   if (!client) return [];
-  const { data, error } = await client.from('gift_slides').select('id,title,image_path,enabled,sort_order,created_at')
-    .eq('enabled', true).order('sort_order').order('created_at');
+  const { data, error } = await client.from('gift_slides').select('id,title,image_path,enabled,sort_order,created_at,section')
+    .eq('enabled', true).eq('section', section).order('sort_order').order('created_at');
   if (error) throw new Error('Gifts unavailable');
   return data || [];
 }

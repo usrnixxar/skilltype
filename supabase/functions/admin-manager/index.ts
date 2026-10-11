@@ -37,6 +37,8 @@ Deno.serve(async (req: Request) => {
     if(body.action==='delete-player')return reply({success:true,...await rpc('delete-player',{playerId:body.playerId,confirm:body.confirm})});
     if(body.action==='gifts')return reply({success:true,...await rpc('gifts')});
     if(body.action==='upload-gift'){
+      const section=body.section ?? 'showcase';
+      if(!['showcase','achievement'].includes(section))return reply({error:'Invalid product section'},400);
       if(typeof body.title!=='string'||!body.title.trim()||body.title.trim().length>80||!uuid.test(body.id||''))return reply({error:'Enter a gift title (1–80 characters)'},400);
       if(typeof body.image!=='string'||body.image.length>2800000)return reply({error:'Image must be under 2 MB'},400);
       const bytes=Uint8Array.from(atob(body.image),c=>c.charCodeAt(0));
@@ -53,7 +55,7 @@ Deno.serve(async (req: Request) => {
       const {error:uploadError}=await client.storage.from('gift-images').upload(path,bytes,{contentType,upsert:false,cacheControl:'3600'});
       if(uploadError)return reply({error:'Image upload failed. Please retry with the file again.'},503);
       try {
-        const result=await rpc('save-gift',{id:body.id,title:body.title.trim(),imagePath:path,enabled:true,sortOrder:0});
+        const result=await rpc('save-gift',{id:body.id,title:body.title.trim(),imagePath:path,enabled:section==='showcase',sortOrder:0,section});
         return reply({success:true,...result});
       }catch(error){await client.storage.from('gift-images').remove([path]);throw error;}
     }

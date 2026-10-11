@@ -1,3 +1,4 @@
+import { ReferralCard } from './ReferralCard';
 import React from 'react';
 import { useCompetition } from '../context/CompetitionContext';
 import { GameStats } from '../game/types';
@@ -179,6 +180,8 @@ export const LiveStatsPanel: React.FC<LiveStatsPanelProps> = ({
           <div className="last-week-winner-name">{winner?.name ?? (loading ? 'Loading…' : unavailable ? 'Temporarily unavailable' : 'No winner yet')}</div>
           <div className="stat-card-subtext">Highest points at Saturday close • IST</div>
         </div>
+
+        <ReferralCard player={activePlayer} />
 
         {/* Practice Timer Countdown if applicable */}
         {mode === 'practice' && practiceTimedMs > 0 && (

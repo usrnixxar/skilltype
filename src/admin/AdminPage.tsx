@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ArrowLeft, Gift, LogOut, Search, ShieldCheck, Trash2, Upload, Users } from 'lucide-react';
+import { ArrowLeft, Gift, Trophy, LogOut, Search, ShieldCheck, Trash2, Upload, Users } from 'lucide-react';
 import { loadActivePlayer, PlayerProfile, clearActivePlayer } from '../utils/playerProfile';
 import { loginPlayer, logoutPlayer, SessionConflictError } from '../utils/playerSession';
 import { adminRequest, GiftSlide, giftImageUrl, imageAsBase64, ManagedPlayer } from '../utils/adminApi';
@@ -8,14 +8,13 @@ import './admin.css';
 function GiftEditor({ gift, token, onSaved, onError }: { gift: GiftSlide; token: string; onSaved: () => void; onError: (error: string) => void }) {
   const [title, setTitle] = useState(gift.title);
   const [enabled, setEnabled] = useState(gift.enabled);
-  const [order, setOrder] = useState(String(gift.sort_order));
   const [busy, setBusy] = useState(false);
   const save = async (remove = false) => {
     if (busy) return;
     if (remove && !window.confirm(`Remove “${gift.title}” and its image permanently?`)) return;
     setBusy(true); onError('');
     try {
-      await adminRequest(token, remove ? 'delete-gift' : 'update-gift', { id: gift.id, title, enabled, sortOrder: Number(order) });
+      await adminRequest(token, remove ? 'delete-gift' : 'update-gift', { id: gift.id, title, enabled, sortOrder: gift.sort_order });
       onSaved();
     } catch (e) { onError(e instanceof Error ? e.message : 'Could not save gift.'); }
     finally { setBusy(false); }
@@ -24,8 +23,7 @@ function GiftEditor({ gift, token, onSaved, onError }: { gift: GiftSlide; token:
     <div className="admin-gift-preview"><img src={giftImageUrl(gift.image_path)} alt={gift.title} /></div>
     <form onSubmit={e => { e.preventDefault(); void save(); }}>
       <label>Gift title<input aria-label={`Title for ${gift.title}`} value={title} maxLength={80} required disabled={busy} onChange={e => setTitle(e.target.value)} /></label>
-      <div className="admin-gift-options"><label>Display order<input aria-label={`Order for ${gift.title}`} type="number" min={-10000} max={10000} step="1" value={order} required disabled={busy} onChange={e => setOrder(e.target.value)} /></label>
-        <label className="admin-checkbox"><input type="checkbox" checked={enabled} disabled={busy} onChange={e => setEnabled(e.target.checked)} /> Show in slider</label></div>
+      <div className="admin-gift-options"><label className="admin-checkbox"><input type="checkbox" checked={enabled} disabled={busy} onChange={e => setEnabled(e.target.checked)} /> {gift.section === 'achievement' ? 'Show as Top Achievement' : 'Show in showcase'}</label></div>
       <div className="admin-actions"><button className="admin-primary" type="submit" disabled={busy}>{busy ? 'Saving…' : 'Save changes'}</button><button className="admin-danger" type="button" disabled={busy} onClick={() => void save(true)}><Trash2 size={16} /> Delete</button></div>
     </form>
   </article>;
@@ -39,7 +37,7 @@ export default function AdminPage() {
   const [checking, setChecking] = useState(!!token);
   const [name, setName] = useState(''); const [pin, setPin] = useState('');
   const [busy, setBusy] = useState(false); const [error, setError] = useState(''); const [notice, setNotice] = useState('');
-  const [tab, setTab] = useState<'players' | 'gifts'>('players');
+  const [tab, setTab] = useState<'players' | 'showcase' | 'achievement'>('players');
   const [players, setPlayers] = useState<ManagedPlayer[]>([]); const [total, setTotal] = useState(0);
   const [query, setQuery] = useState(''); const [search, setSearch] = useState(''); const [page, setPage] = useState(0);
   const [loading, setLoading] = useState(false); const [revision, setRevision] = useState(0);
@@ -73,7 +71,7 @@ export default function AdminPage() {
     let stopped = false; setLoading(true); setError('');
     const load = async () => {
       try {
-        const result = await adminRequest(token, tab, tab === 'players' ? { search, page } : {});
+        const result = await adminRequest(token, tab === 'players' ? 'players' : 'gifts', tab === 'players' ? { search, page } : {});
         if (stopped) return;
         if (tab === 'players') { setPlayers(result.players); setTotal(result.total); }
         else setGifts(result.gifts);
@@ -123,8 +121,8 @@ export default function AdminPage() {
     setBusy(true); setError(''); setNotice('');
     try {
       const image = await imageAsBase64(file);
-      await adminRequest(token, 'upload-gift', { id: uploadId.current, title: title.trim(), image });
-      setNotice('Gift uploaded. It will appear on the website within 30 seconds or after refresh.');
+      await adminRequest(token, 'upload-gift', { id: uploadId.current, title: title.trim(), image, section: tab });
+      setNotice(tab === 'achievement' ? 'Product uploaded. Select Show as Top Achievement and save to display it.' : 'Product published in the shuffled showcase.');
       uploadId.current = crypto.randomUUID(); setTitle(''); setFile(null); if (fileInput.current) fileInput.current.value = ''; refresh();
     } catch (e) { setError(e instanceof Error ? e.message : 'Upload failed.'); }
     finally { setBusy(false); }
@@ -142,16 +140,16 @@ export default function AdminPage() {
       </form>}
     </section> : <>
       <div className="admin-page-heading"><div><p className="admin-eyebrow">SKILLENCE ACADEMY</p><h1>Website management</h1><p>Welcome, {profile?.name}. Manage players and the public gift showcase.</p></div><span className="admin-verified"><ShieldCheck size={16} /> Admin verified</span></div>
-      <nav className="admin-tabs" aria-label="Admin sections"><button className={tab === 'players' ? 'active' : ''} aria-current={tab === 'players' ? 'page' : undefined} onClick={() => { setTab('players'); setNotice(''); }}><Users size={18} /> Players</button><button className={tab === 'gifts' ? 'active' : ''} aria-current={tab === 'gifts' ? 'page' : undefined} onClick={() => { setTab('gifts'); setNotice(''); }}><Gift size={18} /> Gifts</button></nav>
+      <nav className="admin-tabs" aria-label="Admin sections"><button className={tab === 'players' ? 'active' : ''} aria-current={tab === 'players' ? 'page' : undefined} onClick={() => { setTab('players'); setNotice(''); }}><Users size={18} /> Players</button>{(['achievement', 'showcase'] as const).map(section => <button key={section} disabled={busy} className={tab === section ? 'active' : ''} aria-current={tab === section ? 'page' : undefined} onClick={() => { setTab(section); setFile(null); setTitle(''); uploadId.current = crypto.randomUUID(); if (fileInput.current) fileInput.current.value = ''; setNotice(''); }}>{section === 'achievement' ? <Trophy size={18} /> : <Gift size={18} />}{section === 'achievement' ? 'Top Achievement' : 'Showcase'}</button>)}</nav>
       {tab === 'players' ? <section className="admin-surface"><div className="admin-section-heading"><div><h2>Players <span className="admin-count">{total}</span></h2><p>Search by name or player ID. Your Admin account is protected.</p></div><button className="admin-button" onClick={refresh} disabled={loading}>Refresh</button></div>
         <form className="admin-search" onSubmit={e => { e.preventDefault(); setPage(0); setSearch(query.trim()); }}><Search size={18} /><input aria-label="Search players" placeholder="Search player name or ID…" maxLength={80} value={query} onChange={e => setQuery(e.target.value)} /><button type="submit" className="admin-primary">Search</button></form>
         {loading ? <p role="status">Loading players…</p> : players.length === 0 ? <div className="admin-empty">No players found.</div> : <div className="admin-table-wrap"><table><thead><tr><th>Player</th><th>Type</th><th>All-time points</th><th>Action</th></tr></thead><tbody>{players.map(player => <tr key={player.id}><td><strong>{player.name}</strong><small className="admin-player-id">{player.id}</small></td><td><span className="admin-type">{player.kind}</span></td><td>{Number(player.points).toLocaleString()}</td><td><button type="button" className="admin-danger" onClick={() => { setDeleting(player); setConfirmation(''); setError(''); }}><Trash2 size={15} /> Delete</button></td></tr>)}</tbody></table></div>}
         <div className="admin-pagination"><button className="admin-button" disabled={page === 0 || loading} onClick={() => setPage(p => p - 1)}>Previous</button><span>Page {page + 1} of {Math.max(1,Math.ceil(total / 25))}</span><button className="admin-button" disabled={(page + 1) * 25 >= total || loading} onClick={() => setPage(p => p + 1)}>Next</button></div>
-      </section> : <section><div className="admin-surface"><div className="admin-section-heading"><div><h2>Upload a gift</h2><p>Images appear below the leaderboard. JPG, PNG or WebP · up to 2 MB.</p></div><Upload size={24} className="admin-accent" /></div>
+      </section> : <section><div className="admin-surface"><div className="admin-section-heading"><div><h2>{tab === 'achievement' ? 'Top Achievement product' : 'Showcase products'}</h2><p>{tab === 'achievement' ? 'Upload products one at a time. Choose one product to display above the leaderboard.' : 'Upload multiple products one at a time. Visible products shuffle below the leaderboard.'} JPG, PNG or WebP · up to 2 MB.</p></div><Upload size={24} className="admin-accent" /></div>
         <form className="admin-upload-form" onSubmit={upload}><label>Gift title<input value={title} required maxLength={80} placeholder="e.g. Gaming Keyboard" disabled={busy} onChange={e => setTitle(e.target.value)} /></label><label>Gift image<input ref={fileInput} type="file" accept="image/jpeg,image/png,image/webp" required disabled={busy} onChange={e => { uploadId.current = crypto.randomUUID(); setFile(e.target.files?.[0] || null); }} /></label>
-          {preview && <img className="admin-upload-preview" src={preview} alt="Selected gift preview" />}<button className="admin-primary" type="submit" disabled={busy || !file}>{busy ? 'Uploading…' : 'Upload & publish gift'}</button></form>
-      </div><div className="admin-section-heading admin-gifts-heading"><h2>Gift library</h2><button className="admin-button" onClick={refresh} disabled={loading}>Refresh</button></div><p className="admin-muted">Lower display-order numbers appear first. Hide a gift to remove it from the slider without deleting its image.</p>
-        {loading ? <p role="status">Loading gifts…</p> : gifts.length === 0 ? <div className="admin-surface admin-empty">No gifts uploaded yet. Upload your first image above.</div> : <div className="admin-gift-grid">{gifts.map(gift => <GiftEditor key={`${gift.id}:${gift.title}:${gift.enabled}:${gift.sort_order}`} gift={gift} token={token} onError={setError} onSaved={() => { refresh(); setNotice('Gift showcase updated.'); }} />)}</div>}
+          {preview && <img className="admin-upload-preview" src={preview} alt="Selected gift preview" />}<button className="admin-primary" type="submit" disabled={busy || !file}>{busy ? 'Uploading…' : 'Upload product'}</button></form>
+      </div><div className="admin-section-heading admin-gifts-heading"><h2>{tab === 'achievement' ? 'Achievement library' : 'Showcase library'}</h2><button className="admin-button" onClick={refresh} disabled={loading}>Refresh</button></div><p className="admin-muted">{tab === 'achievement' ? 'Only one product can be active. Selecting a new product automatically hides the previous selection.' : 'All visible products rotate in random order. Hide a product to keep it in your library without displaying it.'}</p>
+        {loading ? <p role="status">Loading gifts…</p> : gifts.filter(gift => gift.section === tab).length === 0 ? <div className="admin-surface admin-empty">No gifts uploaded yet. Upload your first image above.</div> : <div className="admin-gift-grid">{gifts.filter(gift => gift.section === tab).map(gift => <GiftEditor key={`${gift.id}:${gift.title}:${gift.enabled}:${gift.sort_order}`} gift={gift} token={token} onError={setError} onSaved={() => { refresh(); setNotice('Product display updated.'); }} />)}</div>}
       </section>}
       <dialog ref={deleteDialog} className="admin-delete-dialog" onCancel={e => { if (busy) e.preventDefault(); else setDeleting(null); }}><h2>Delete this player?</h2><strong>{deleting?.name}</strong><small className="admin-player-id">{deleting?.id}</small><p>This permanently removes the profile, all leaderboard scores and game history, and logs out this player.</p>{deleting?.kind === 'student' && <p>The student PIN will also be disabled.</p>}<p>A guest can still join again as a new guest.</p>
         <label>Type DELETE to confirm<input autoComplete="off" value={confirmation} disabled={busy} onChange={e => setConfirmation(e.target.value)} /></label>{error && <p role="alert" className="admin-error-text">{error}</p>}
