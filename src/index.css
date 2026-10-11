@@ -3486,3 +3486,45 @@ body:has(.admin-image-modal[open]) { overflow: hidden; }
 /* Discourage casual image copying without interfering with clicks or accessibility. */
 .gift-showcase .gift-image-stage img,
 .top-achievement-image { -webkit-user-drag: none; user-select: none; -webkit-user-select: none; }
+
+/* Top Achievement: heading on top, prize centered, compact caption at bottom. */
+.weekly-leaderboard-panel .leaderboard-reward-row .top-achievement-box {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  gap: 2px;
+  padding: 7px 6px 4px;
+}
+.weekly-leaderboard-panel .leaderboard-reward-row .top-achievement-kicker {
+  display: block;
+  margin: 0;
+  flex: 0 0 auto;
+  text-align: center;
+}
+.weekly-leaderboard-panel .leaderboard-reward-row .top-achievement-media {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 48px;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+}
+.weekly-leaderboard-panel .leaderboard-reward-row .top-achievement-image {
+  width: min(88px, 75%);
+  height: 64px;
+  max-height: 100%;
+  flex: 0 1 auto;
+  object-fit: contain;
+}
+.weekly-leaderboard-panel .leaderboard-reward-row .top-achievement-copy {
+  width: 100%;
+  gap: 1px;
+  margin: 0;
+  line-height: 1.12;
+  text-align: center;
+}
+.weekly-leaderboard-panel .leaderboard-reward-row .top-achievement-title,
+.weekly-leaderboard-panel .leaderboard-reward-row .top-achievement-subtitle {
+  margin: 0;
+}
