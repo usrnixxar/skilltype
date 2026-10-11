@@ -1,22 +1,20 @@
 import { useState } from 'react';
-import { Copy, Link, Users } from 'lucide-react';
+import { Check, Share2 } from 'lucide-react';
 import { PlayerProfile } from '../utils/playerProfile';
 
 export function ReferralCard({ player }: { player: PlayerProfile | null }) {
-  const [message, setMessage] = useState('');
-  const code = player?.id || '';
+  const [status, setStatus] = useState<'idle' | 'copied' | 'error'>('idle');
+  if (!player) return null;
   const invite = new URL('/', window.location.origin);
-  if (code) invite.searchParams.set('ref', code);
-  const copy = async (value: string) => {
-    try { await navigator.clipboard.writeText(value); setMessage('Copied! Share it with your friends.'); }
-    catch { setMessage('Copy unavailable. Select and copy the link below.'); }
+  invite.searchParams.set('ref', player.id);
+  const copy = async () => {
+    try { await navigator.clipboard.writeText(invite.href); setStatus('copied'); }
+    catch { setStatus('error'); }
   };
-  return <section className="referral-card" aria-label="Refer and earn">
-    <h3><Users size={19} /> REFER &amp; EARN</h3><p>Invite friends to SkillType</p>
-    {player ? <><div className="referral-code"><input aria-label="Your referral code" value={code} readOnly onFocus={e => e.target.select()} /><button type="button" aria-label="Copy referral code" onClick={() => void copy(code)}><Copy size={16} /></button></div>
-      <button className="referral-invite" type="button" onClick={() => void copy(invite.href)}><Link size={16} /> Copy Invite Link</button>
-      {message && <><small role="status">{message}</small><input className="referral-link" aria-label="Your invite link" value={invite.href} readOnly onFocus={e => e.target.select()} /></>}
-    </> : <p>Log in to get your invite link.</p>}
-    <small>Rewards to be announced</small>
+  return <section className="referral-strip" aria-label="Refer and win">
+    <div className="referral-strip-row"><div className="referral-strip-text"><strong>REFER AND WIN</strong><small aria-live="polite">{status === 'copied' ? 'Invitation link copied!' : 'Copy invitation link'}</small></div>
+      <button type="button" aria-label="Copy invitation link" title="Copy invitation link" onClick={() => void copy()}>{status === 'copied' ? <Check size={21} /> : <Share2 size={21} />}</button>
+    </div>
+    {status === 'error' && <div className="referral-copy-fallback"><small role="status">Select and copy your invitation link:</small><input aria-label="Your invitation link" value={invite.href} readOnly onFocus={e => e.target.select()} /></div>}
   </section>;
 }

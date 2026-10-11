@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { PlayerProfile, validatePlayerName } from '../utils/playerProfile';
 import { loginPlayer, SessionConflictError } from '../utils/playerSession';
 import { GraduationCap, User, Play } from 'lucide-react';
@@ -10,6 +10,17 @@ interface WelcomeModalProps {
   canClose?: boolean;
 }
 export const WelcomeModal: React.FC<WelcomeModalProps> = ({ isOpen, activePlayer, onSavePlayerAndStart }) => {
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const visible = isOpen && !activePlayer;
+  useEffect(() => {
+    if (!visible) return;
+    const bodyOverflow = document.body.style.overflow;
+    const htmlOverflow = document.documentElement.style.overflow;
+    document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
+    dialogRef.current?.querySelector<HTMLButtonElement>('button')?.focus();
+    return () => { document.body.style.overflow = bodyOverflow; document.documentElement.style.overflow = htmlOverflow; };
+  }, [visible]);
   const [kind, setKind] = useState<'student' | 'guest' | null>(null);
   const [name, setName] = useState('');
   const [pin, setPin] = useState('');
@@ -54,7 +65,13 @@ export const WelcomeModal: React.FC<WelcomeModalProps> = ({ isOpen, activePlayer
       setBusy(false);
     }
   };
-  return <div className="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="welcome-title">
+  return <div ref={dialogRef} className="modal-backdrop welcome-screen" onKeyDown={event => {
+    if (event.key !== 'Tab') return;
+    const controls = Array.from(event.currentTarget.querySelectorAll<HTMLElement>('button:not(:disabled), input:not(:disabled), a[href]'));
+    const first = controls[0], last = controls[controls.length - 1];
+    if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
+    else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
+  }} role="dialog" aria-modal="true" aria-labelledby="welcome-title">
     <div className="modal-content welcome-modal-content">
       <div className="welcome-modal-header">
         <div className="welcome-brand-badge"><div className="welcome-logo-circle"><img src="/skillence-logo.jpg" alt="SkillType Starfighter" /></div><span className="welcome-badge-text">SKILLENCE ACADEMY</span></div>

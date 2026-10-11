@@ -531,9 +531,9 @@ export const App: React.FC = () => {
   const currentBest = records.personalBests[pbKey] || null;
 
   return (
-    <div className="skilltype-app" id="skilltype-root">
+    <div className={`skilltype-app${!activePlayer ? ' login-required' : ''}`} id="skilltype-root">
       {/* 3-Column Desktop Layout */}
-      <div className="skilltype-layout-container">
+      <div className="skilltype-layout-container" aria-hidden={!activePlayer || undefined}>
         {/* LEFT COLUMN: Live Player Statistics */}
         <aside className="skilltype-side-column skilltype-left-column">
           <LiveStatsPanel

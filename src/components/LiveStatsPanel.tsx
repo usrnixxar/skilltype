@@ -106,6 +106,8 @@ export const LiveStatsPanel: React.FC<LiveStatsPanelProps> = ({
         </button>
       </div>
 
+      <ReferralCard player={activePlayer} />
+
       {/* Primary Metrics Grid */}
       <div className="stats-metrics-list">
         {/* SCORE */}
@@ -180,8 +182,6 @@ export const LiveStatsPanel: React.FC<LiveStatsPanelProps> = ({
           <div className="last-week-winner-name">{winner?.name ?? (loading ? 'Loading…' : unavailable ? 'Temporarily unavailable' : 'No winner yet')}</div>
           <div className="stat-card-subtext">Highest points at Saturday close • IST</div>
         </div>
-
-        <ReferralCard player={activePlayer} />
 
         {/* Practice Timer Countdown if applicable */}
         {mode === 'practice' && practiceTimedMs > 0 && (

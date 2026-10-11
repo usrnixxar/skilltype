@@ -8,17 +8,19 @@ Search by name or player ID. Choose **Delete**, review the named player, type `D
 
 ## Top Achievement
 
-Choose **Top Achievement** and upload a title and JPG/PNG/WebP image (up to 2 MB). Each upload is saved in this separate library, initially hidden. Check **Show as Top Achievement** on a product and **Save changes**. Selecting a product automatically hides the previously selected product. A database constraint enforces at most one active achievement, including concurrent requests. Uncheck and save to hide the section entirely. Products remain in the library until deleted.
+Choose **Top Achievement** and upload a title and JPG/PNG/WebP image (up to 2 MB). Each upload is saved in this separate library, initially hidden. Check **Show as Top Achievement** on a product and **Save changes**. Selecting a product automatically hides the previously selected product. A database constraint enforces at most one active achievement, including concurrent requests. Uncheck and save to show COMING SOON in the section. Products remain in the library until deleted.
 
 ## Showcase
 
 Choose **Showcase** and upload products one at a time. You can keep multiple products; all visible showcase products appear below the leaderboard in a randomly shuffled carousel. Each remains visible for five seconds, with previous/next, dots and pause controls. The order stays stable during background refreshes unless products are added or removed. It pauses while hovered/focused and initially for reduced-motion users.
 
-Edit a title or **Show in showcase**, then save. Delete removes the image and entry; hiding retains them. Images have public storage URLs, so hiding is not a privacy control. Website sections refresh every 30 seconds or on page focus; reload for an immediate update. Empty sections stay hidden. Existing gift uploads remain in Showcase.
+Edit a title or **Show in showcase**, then save. Delete removes the image and entry; hiding retains them. Images have public storage URLs, so hiding is not a privacy control. Website sections refresh every 30 seconds or on page focus; reload for an immediate update. Empty sections remain visible with COMING SOON. Existing gift uploads remain in Showcase.
 
 ## Refer & Earn
 
-The card below Last Week Winner provides a personal invite URL and copyable player-ID referral code. A copy failure exposes the link for manual copying. This release provides invite sharing only: referral conversion tracking and reward points are not configured. The card says “Rewards to be announced”; no reward amount or qualification rule is assumed.
+The compact REFER AND WIN row sits directly below the player profile, outside the Live Stats metrics. Its text takes 70% of the row and the share button 30%. The share button copies the personal invite URL, with a manual-copy fallback. This release provides invite sharing only; referral conversion tracking and reward points are not configured.
+
+Login is an opaque, fixed first screen. Game content is hidden and background scrolling is locked until login. The login form itself can scroll on short screens and when the mobile keyboard is open.
 
 ## Implementation
 
