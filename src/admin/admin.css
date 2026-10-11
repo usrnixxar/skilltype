@@ -4,3 +4,16 @@
 .admin-tabs{flex-wrap:wrap}.admin-tabs button{padding:12px 16px}.admin-gift-options{flex-wrap:wrap}
 
 .admin-gift-options>label.admin-checkbox{max-width:none}
+
+/* Privacy-conscious visitor analytics and player session details. */
+.analytics-bars { display:flex;align-items:flex-end;gap:8px;min-height:260px;padding:16px 3px;overflow-x:auto; }
+.analytics-bar-col { min-width:40px;flex:1;display:flex;align-items:center;flex-direction:column;gap:6px;font-size:11px; }
+.analytics-bar-track { height:185px;width:100%;display:flex;align-items:flex-end;justify-content:center;background:rgba(127,143,180,.08);border-radius:6px; }
+.analytics-bar { width:70%;min-height:2px;background:linear-gradient(0deg,#3b82f6,#22d3ee);border-radius:5px 5px 0 0; }
+.analytics-bar-col small { font-size:9px;white-space:nowrap; }
+.admin-player-detail-button {cursor:pointer;border:0;background:none;color:inherit;text-align:left;text-decoration:underline;text-decoration-style:dotted;}
+.admin-detail-backdrop {position:fixed;inset:0;background:#010713cc;display:flex;align-items:center;justify-content:center;z-index:500;padding:16px;}
+.admin-detail-modal {width:min(95vw,540px);max-height:85vh;overflow-y:auto;}
+.activity-dot {display:inline-block;width:11px;height:11px;border-radius:50%;margin-right:6px;}
+.activity-dot.online {background:#16a34a;box-shadow:0 0 9px #16a34a66;}
+.activity-dot.offline {background:#dc2626;}
