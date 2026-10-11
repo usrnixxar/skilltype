@@ -3558,3 +3558,13 @@ body:has(.admin-image-modal[open]) { overflow: hidden; }
 .weekly-leaderboard-panel .wheel-open-image { display:block; width:36px; height:36px; object-fit:contain; animation:skilltype-wheel-rotate 3.2s linear infinite; transform-origin:center; pointer-events:none; -webkit-user-drag:none; }
 @keyframes skilltype-wheel-rotate { to { transform:rotate(360deg); } }
 @media(prefers-reduced-motion:reduce) { .weekly-leaderboard-panel .wheel-open-image { animation:none; } }
+
+/* Keep wheel dimensions constant throughout the full five-second rotation. */
+.spin-modal-backdrop { overflow-x:hidden; overscroll-behavior:contain; }
+.spin-modal { box-sizing:border-box; overflow-x:hidden; scrollbar-gutter:stable; }
+.spin-wheel-stage { box-sizing:border-box; width:min(290px,80vw); height:min(290px,80vw); min-width:0; min-height:0; max-width:none; max-height:none; flex:0 0 auto; overflow:visible; isolation:isolate; }
+.spin-wheel-disc { box-sizing:border-box; width:280px; height:280px; min-width:280px; min-height:280px; max-width:none; max-height:none; flex:0 0 auto; backface-visibility:hidden; -webkit-backface-visibility:hidden; will-change:transform; transform-origin:50% 50%; transition:transform 5s cubic-bezier(.12,.7,.12,1); }
+.spin-wheel-slot { flex-shrink:0; }
+@media(max-width:360px) {
+ .spin-wheel-stage { width:280px; height:280px; }
+}
