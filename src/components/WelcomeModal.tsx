@@ -94,11 +94,11 @@ export const WelcomeModal: React.FC<WelcomeModalProps> = ({ isOpen, activePlayer
         <div className="form-group"><label htmlFor="player-name-input" className="form-label">Your full name</label>
           <input id="player-name-input" className="text-input player-name-input" value={name} onChange={e => setName(e.target.value)} minLength={2} maxLength={25} required disabled={busy} autoComplete="name" placeholder="Enter your name" autoFocus />
         </div>
+        {kind && <div className="form-group"><label htmlFor="student-pin" className="form-label">{kind==='student'?'Student PIN':'Guest PIN'}</label>
+          <input id="student-pin" className="text-input player-name-input" type="password" inputMode="numeric" pattern="[0-9]{6}" maxLength={6} value={pin} onChange={e => setPin(e.target.value.replace(/\D/g, ''))} required disabled={busy} placeholder={kind==="student"?"6-digit PIN from your teacher":"Your 6-digit PIN"} autoComplete="off" />
+          <p className="form-hint">Use your registered name and six-digit PIN. Keep your PIN private.</p></div>}
         {kind==='guest' && <div className="login-choices"><button type="button" className={registerMode?'login-choice':'login-choice selected'} onClick={()=>setRegisterMode(false)}>Login</button><button type="button" className={registerMode?'login-choice selected':'login-choice'} onClick={()=>setRegisterMode(true)}>Create / New User</button></div>}
         {kind==='guest'&&registerMode&&<div className="form-group"><label className="form-label" htmlFor="guest-email">Email address</label><input id="guest-email" className="text-input player-name-input" type="email" value={email} onChange={e=>setEmail(e.target.value)} required disabled={busy} autoComplete="email" placeholder="Enter your email" /></div>}
-        {kind && <div className="form-group"><label htmlFor="student-pin" className="form-label">{kind==='student'?'Student PIN':'Guest PIN'}</label>
-          <input id="student-pin" className="text-input player-name-input" type="text" inputMode="numeric" pattern="[0-9]{6}" maxLength={6} value={pin} onChange={e => setPin(e.target.value.replace(/\D/g, ''))} required disabled={busy} placeholder="6-digit PIN from your teacher" autoComplete="off" />
-          <p className="form-hint">Use your registered name and six-digit PIN. Keep your PIN private.</p></div>}
         <p className="form-hint">{kind === 'guest' ? 'Register once with name, email and PIN. Then log in with the same name and PIN. Names remain masked on the leaderboard.' : 'Your full registered name is shown publicly and your scores stay linked to your student profile.'}</p>
         {notice&&<div className="form-hint" role="status">{notice}</div>}
         {error && <div className="form-error-msg" role="alert">{error}</div>}
