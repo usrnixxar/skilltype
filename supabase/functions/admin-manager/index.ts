@@ -43,7 +43,7 @@ Deno.serve(async (req: Request) => {
     }
     if(body.action==='wheel-save'){
       const slot=Number(body.slot),chance=Number(body.chance);
-      if(!Number.isInteger(slot)||slot<5||slot>8||!Number.isFinite(chance)||chance<0||chance>100||!Number.isInteger(chance*100)||typeof body.title!=='string'||body.title.trim().length<1||body.title.trim().length>80)return reply({error:'Invalid wheel slot, title or chance'},400);
+      if(!Number.isInteger(slot)||slot<5||slot>8||!Number.isFinite(chance)||chance<0||chance>100||Math.abs(chance*100-Math.round(chance*100))>0.000001||typeof body.title!=='string'||body.title.trim().length<1||body.title.trim().length>80)return reply({error:'Invalid wheel slot, title or chance'},400);
       const {data:existing,error:readError}=await client.from('spin_prizes').select('*').order('slot');
       if(readError||!existing)return reply({error:'Unable to read wheel settings'},503);
       const previous=existing.find(p=>p.slot===slot);
