@@ -15,7 +15,9 @@ export function SpinWheel({ open, onClose, activePlayer, claimRun, onClaimed }: 
   const [error,setError]=useState('');
   const [result,setResult]=useState<string|null>(null);
   const [angle,setAngle]=useState(0);
-  const spinNumber=useRef(0);
+  const spinTimeout=useRef<number|null>(null);
+  const angleRef=useRef(0);
+  useEffect(()=>()=>{if(spinTimeout.current!==null)window.clearTimeout(spinTimeout.current)},[]);
   const [spinning,setSpinning]=useState(false);
   const load=useCallback(async()=>{
     if(!activePlayer?.sessionToken)return;
@@ -42,14 +44,23 @@ export function SpinWheel({ open, onClose, activePlayer, claimRun, onClaimed }: 
       const response=await wheelRequest(activePlayer.sessionToken,'spin');
       const slot=Number(response.resultSlot);
       if(!Number.isInteger(slot)||slot<1||slot>8)throw new Error('Wheel result invalid');
-      spinNumber.current+=1;
       const position=displayOrder.indexOf(slot);
       if(position<0)throw new Error('Unknown wheel slot');
-      const target=360-(position*45+22.5);
-      setAngle(360*(6+spinNumber.current*8)+target);
+      const target=(360-(position*45+22.5))%360;
+      const current=((angleRef.current%360)+360)%360;
+      const distance=((target-current+360)%360);
+      const nextAngle=angleRef.current+360*6+distance;
+      angleRef.current=nextAngle;
       setSpinning(true);
-      await load();
-      window.setTimeout(()=>{setSpinning(false);setResult(status?.prizes.find(p=>p.slot===slot)?.title||'Try Again')},4600);
+      setAngle(nextAngle);
+      const prizeTitle=status?.prizes.find(p=>p.slot===slot)?.title||'Try Again';
+      if(spinTimeout.current!==null)window.clearTimeout(spinTimeout.current);
+      spinTimeout.current=window.setTimeout(()=>{
+        spinTimeout.current=null;
+        setSpinning(false);
+        setResult(prizeTitle);
+        void load();
+      },5000);
     }catch(e){setError(e instanceof Error?e.message:'Spin failed')}
     finally{setBusy(false)}
   };
