@@ -25,7 +25,9 @@ export function SpinWheel({ open, onClose, activePlayer, claimRun, onClaimed }: 
   useEffect(()=>{if(open){setResult(null);void load();}},[open,load]);
   useEffect(()=>{if(!open)return;const listener=(e:KeyboardEvent)=>{if(e.key==='Escape'&&!spinning)onClose();};window.addEventListener('keydown',listener);return()=>window.removeEventListener('keydown',listener)},[open,onClose,spinning]);
   if(!open)return null;
-  const slots=Array.from({length:8},(_,i)=>status?.prizes.find(p=>p.slot===i+1));
+  // Alternating visual order; database slot IDs and admin probabilities stay unchanged.
+  const displayOrder = [1,5,2,6,3,7,4,8];
+  const slots=displayOrder.map(slot=>status?.prizes.find(p=>p.slot===slot));
   const claim=async()=>{
     if(!activePlayer?.sessionToken||!claimRun||busy)return;
     setBusy(true);setError('');
@@ -41,7 +43,9 @@ export function SpinWheel({ open, onClose, activePlayer, claimRun, onClaimed }: 
       const slot=Number(response.resultSlot);
       if(!Number.isInteger(slot)||slot<1||slot>8)throw new Error('Wheel result invalid');
       spinNumber.current+=1;
-      const target=360-((slot-1)*45+22.5);
+      const position=displayOrder.indexOf(slot);
+      if(position<0)throw new Error('Unknown wheel slot');
+      const target=360-(position*45+22.5);
       setAngle(360*(6+spinNumber.current*8)+target);
       setSpinning(true);
       await load();
