@@ -25,14 +25,33 @@ export async function fetchGiftSlides(section: ProductSection = 'showcase'): Pro
   if (error) throw new Error('Gifts unavailable');
   return data || [];
 }
+// Convert new gift uploads to WebP before sending to the admin service.
+// This reduces file size; it does not make publicly displayed images private.
 export async function imageAsBase64(file: File): Promise<string> {
-  if (!['image/jpeg','image/png','image/webp'].includes(file.type) || file.size > 2 * 1024 * 1024 || file.size === 0) {
+  if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 2 * 1024 * 1024 || file.size === 0) {
     throw new Error('Choose a JPG, PNG or WebP image under 2 MB.');
   }
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result).split(',')[1]);
-    reader.onerror = () => reject(new Error('Could not read this image.'));
-    reader.readAsDataURL(file);
-  });
+  const bitmap = await createImageBitmap(file);
+  try {
+    const canvas = document.createElement('canvas');
+    canvas.width = bitmap.width;
+    canvas.height = bitmap.height;
+    const context = canvas.getContext('2d');
+    if (!context) throw new Error('Image processing is unavailable.');
+    context.drawImage(bitmap, 0, 0);
+    const blob = await new Promise<Blob>((resolve, reject) => {
+      canvas.toBlob(value => value ? resolve(value) : reject(new Error('Could not convert image.')), 'image/webp', 0.84);
+    });
+    if (blob.type !== 'image/webp' || blob.size > 2 * 1024 * 1024 || blob.size === 0) {
+      throw new Error('Converted WebP exceeds 2 MB or is unsupported.');
+    }
+    return await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result).split(',')[1]);
+      reader.onerror = () => reject(new Error('Could not read converted image.'));
+      reader.readAsDataURL(blob);
+    });
+  } finally {
+    bitmap.close();
+  }
 }
