@@ -4,6 +4,7 @@ import { loadActivePlayer, PlayerProfile, clearActivePlayer } from '../utils/pla
 import { loginPlayer, logoutPlayer, SessionConflictError } from '../utils/playerSession';
 import { adminRequest, GiftSlide, giftImageUrl, imageAsBase64, ManagedPlayer } from '../utils/adminApi';
 import './admin.css';
+import { WheelAdmin } from './WheelAdmin';
 
 function GiftEditor({ gift, token, onSaved, onError }: { gift: GiftSlide; token: string; onSaved: () => void; onError: (error: string) => void }) {
   const [title, setTitle] = useState(gift.title);
@@ -37,7 +38,7 @@ export default function AdminPage() {
   const [checking, setChecking] = useState(!!token);
   const [name, setName] = useState(''); const [pin, setPin] = useState('');
   const [busy, setBusy] = useState(false); const [error, setError] = useState(''); const [notice, setNotice] = useState('');
-  const [tab, setTab] = useState<'players' | 'showcase' | 'achievement'>('players');
+  const [tab, setTab] = useState<'players' | 'showcase' | 'achievement' | 'wheel'>('players');
   const [players, setPlayers] = useState<ManagedPlayer[]>([]); const [total, setTotal] = useState(0);
   const [query, setQuery] = useState(''); const [search, setSearch] = useState(''); const [page, setPage] = useState(0);
   const [loading, setLoading] = useState(false); const [revision, setRevision] = useState(0);
@@ -67,14 +68,14 @@ export default function AdminPage() {
     window.addEventListener('storage', sync); return () => window.removeEventListener('storage', sync);
   }, []);
   useEffect(() => {
-    if (!authorized) return;
+    if (!authorized || tab === 'wheel') return;
     let stopped = false; setLoading(true); setError('');
     const load = async () => {
       try {
         const result = await adminRequest(token, tab === 'players' ? 'players' : 'gifts', tab === 'players' ? { search, page } : {});
         if (stopped) return;
         if (tab === 'players') { setPlayers(result.players); setTotal(result.total); }
-        else setGifts(result.gifts);
+        else if (tab !== 'wheel') setGifts(result.gifts);
       } catch (e) { if (!stopped) setError(e instanceof Error ? e.message : 'Could not load data.'); }
       finally { if (!stopped) setLoading(false); }
     };
@@ -140,8 +141,8 @@ export default function AdminPage() {
       </form>}
     </section> : <>
       <div className="admin-page-heading"><div><p className="admin-eyebrow">SKILLENCE ACADEMY</p><h1>Website management</h1><p>Welcome, {profile?.name}. Manage players and the public gift showcase.</p></div><span className="admin-verified"><ShieldCheck size={16} /> Admin verified</span></div>
-      <nav className="admin-tabs" aria-label="Admin sections"><button className={tab === 'players' ? 'active' : ''} aria-current={tab === 'players' ? 'page' : undefined} onClick={() => { setTab('players'); setNotice(''); }}><Users size={18} /> Players</button>{(['achievement', 'showcase'] as const).map(section => <button key={section} disabled={busy} className={tab === section ? 'active' : ''} aria-current={tab === section ? 'page' : undefined} onClick={() => { setTab(section); setFile(null); setTitle(''); uploadId.current = crypto.randomUUID(); if (fileInput.current) fileInput.current.value = ''; setNotice(''); }}>{section === 'achievement' ? <Trophy size={18} /> : <Gift size={18} />}{section === 'achievement' ? 'Top Achievement' : 'Showcase'}</button>)}</nav>
-      {tab === 'players' ? <section className="admin-surface"><div className="admin-section-heading"><div><h2>Players <span className="admin-count">{total}</span></h2><p>Search by name or player ID. Your Admin account is protected.</p></div><button className="admin-button" onClick={refresh} disabled={loading}>Refresh</button></div>
+      <nav className="admin-tabs" aria-label="Admin sections"><button className={tab === 'players' ? 'active' : ''} aria-current={tab === 'players' ? 'page' : undefined} onClick={() => { setTab('players'); setNotice(''); }}><Users size={18} /> Players</button>{(['achievement', 'showcase'] as const).map(section => <button key={section} disabled={busy} className={tab === section ? 'active' : ''} aria-current={tab === section ? 'page' : undefined} onClick={() => { setTab(section); setFile(null); setTitle(''); uploadId.current = crypto.randomUUID(); if (fileInput.current) fileInput.current.value = ''; setNotice(''); }}>{section === 'achievement' ? <Trophy size={18} /> : <Gift size={18} />}{section === 'achievement' ? 'Top Achievement' : 'Showcase'}</button>)}<button className={tab === 'wheel' ? 'active' : ''} onClick={() => {setTab('wheel');setNotice('')}}>🎡 Spin Wheel</button></nav>
+      {tab === 'wheel' ? <WheelAdmin token={token} /> : tab === 'players' ? <section className="admin-surface"><div className="admin-section-heading"><div><h2>Players <span className="admin-count">{total}</span></h2><p>Search by name or player ID. Your Admin account is protected.</p></div><button className="admin-button" onClick={refresh} disabled={loading}>Refresh</button></div>
         <form className="admin-search" onSubmit={e => { e.preventDefault(); setPage(0); setSearch(query.trim()); }}><Search size={18} /><input aria-label="Search players" placeholder="Search player name or ID…" maxLength={80} value={query} onChange={e => setQuery(e.target.value)} /><button type="submit" className="admin-primary">Search</button></form>
         {loading ? <p role="status">Loading players…</p> : players.length === 0 ? <div className="admin-empty">No players found.</div> : <div className="admin-table-wrap"><table><thead><tr><th>Player</th><th>Type</th><th>All-time points</th><th>Action</th></tr></thead><tbody>{players.map(player => <tr key={player.id}><td><strong>{player.name}</strong><small className="admin-player-id">{player.id}</small></td><td><span className="admin-type">{player.kind}</span></td><td>{Number(player.points).toLocaleString()}</td><td><button type="button" className="admin-danger" onClick={() => { setDeleting(player); setConfirmation(''); setError(''); }}><Trash2 size={15} /> Delete</button></td></tr>)}</tbody></table></div>}
         <div className="admin-pagination"><button className="admin-button" disabled={page === 0 || loading} onClick={() => setPage(p => p - 1)}>Previous</button><span>Page {page + 1} of {Math.max(1,Math.ceil(total / 25))}</span><button className="admin-button" disabled={(page + 1) * 25 >= total || loading} onClick={() => setPage(p => p + 1)}>Next</button></div>
