@@ -203,13 +203,15 @@ export const WeeklyLeaderboard: React.FC<WeeklyLeaderboardProps> = ({
 
       <div className="leaderboard-reward-row">
         <TopAchievement />
+        <GiftSlider />
+      </div>
+      <div className="leaderboard-winner-row">
         <section className="leaderboard-winner-card" aria-label="Last week winner">
           <span className="stat-card-label">🏆 LAST WEEK WINNER</span>
           <strong className="last-week-winner-name">{winner?.name ?? (winnerLoading ? 'Loading…' : winnerUnavailable ? 'Temporarily unavailable' : 'No winner yet')}</strong>
           <small>Highest points at Saturday close • IST</small>
         </section>
       </div>
-      <GiftSlider />
 
       <div className="admin-profile-strip" aria-label="Admin profile">
         <button type="button" className="admin-profile-card"
