@@ -49,7 +49,7 @@ export function SpinWheel({ open, onClose, activePlayer, claimRun, onClaimed }: 
       setAngle(360*(6+spinNumber.current*8)+target);
       setSpinning(true);
       await load();
-      window.setTimeout(()=>{setSpinning(false);setResult(slots[slot-1]?.title||'Try Again')},4600);
+      window.setTimeout(()=>{setSpinning(false);setResult(status?.prizes.find(p=>p.slot===slot)?.title||'Try Again')},4600);
     }catch(e){setError(e instanceof Error?e.message:'Spin failed')}
     finally{setBusy(false)}
   };
@@ -57,8 +57,8 @@ export function SpinWheel({ open, onClose, activePlayer, claimRun, onClaimed }: 
    <section role="dialog" aria-modal="true" aria-label="SkillType Spin Wheel" className="spin-modal">
     <button className="spin-close" aria-label="Close Spin Wheel" disabled={spinning} onClick={onClose}><X size={21}/></button>
     <h2>🎡 SKILLTYPE SPIN WHEEL</h2>
-    <p className="spin-note">Cross 10 waves to claim 1 spin token. Maximum 3 tokens per student per day (IST).</p>
-    <p className="spin-token-count">Available: <strong>{status?.available??'–'}</strong> / Earned today: <strong>{status?.earnedToday??'–'}/3</strong></p>
+    <p className="spin-note">{status?.adminTestMode ? 'Admin Test Mode — Unlimited spins, no student tokens used.' : 'Cross 10 waves to claim 1 spin token. Maximum 3 tokens per student per day (IST).'}</p>
+    {!status?.adminTestMode && <p className="spin-token-count">Available: <strong>{status?.available??'–'}</strong> / Earned today: <strong>{status?.earnedToday??'–'}/3</strong></p>}
     <div className="spin-wheel-stage">
       <div className="spin-pointer">▼</div>
       <div className="spin-wheel-disc" style={{transform:`rotate(${angle}deg)`,background:`conic-gradient(${COLORS.map((c,i)=>`${c} ${i*45}deg ${(i+1)*45}deg`).join(',')})`}}>
@@ -72,7 +72,7 @@ export function SpinWheel({ open, onClose, activePlayer, claimRun, onClaimed }: 
     {error&&<p role="alert" className="spin-error">{error}</p>}
     {result&&<p role="status" className="spin-result">{result==='Try Again'?'Try Again — Better luck next time!':`🎉 You won: ${result}`}</p>}
     {claimRun&&<button className="spin-primary" disabled={busy||spinning||!status||status.remainingEarnable<=0} onClick={()=>void claim()}>{busy?'Processing…':'Claim Spin for 10+ Waves'}</button>}
-    <button className="spin-primary" disabled={busy||spinning||!status?.available} onClick={()=>void spin()}><RotateCw size={16}/>{spinning?'Spinning…':'SPIN NOW'}</button>
+    <button className="spin-primary" disabled={busy||spinning||(!status?.available&&!status?.adminTestMode)} onClick={()=>void spin()}><RotateCw size={16}/>{spinning?'Spinning…':'SPIN NOW'}</button>
     <p className="spin-disclaimer">Results are selected by the server. Spin animation is for display only.</p>
    </section>
   </div>;
