@@ -48,10 +48,10 @@ DO $$ BEGIN
   END IF;
 END $$;
 
--- Sunday is practice-only in India; week records remain available for the winner.
+-- All days, including Sunday, award points. Weekly winner records remain available.
 CREATE OR REPLACE FUNCTION public.is_competition_practice_time(p_at timestamptz)
 RETURNS boolean LANGUAGE sql IMMUTABLE SET search_path = ''
-AS $$ SELECT extract(dow FROM p_at AT TIME ZONE 'Asia/Kolkata') = 0 $$;
+AS $ SELECT false $;
 
 CREATE OR REPLACE FUNCTION public.submit_game_score(
   p_session_id TEXT, p_player_id TEXT, p_player_name TEXT,
@@ -85,7 +85,7 @@ BEGIN
     RETURN jsonb_build_object('success', true, 'alreadyRecorded', true,
       'sessionId', p_session_id, 'completedAt', extract(epoch FROM v_existing.created_at) * 1000);
   END IF;
-  -- Keep a zero-point receipt so this Sunday run cannot be retried for points Monday.
+  -- Legacy practice-only branch is inactive while competition runs seven days a week.
   IF public.is_competition_practice_time(clock_timestamp()) THEN
     INSERT INTO public.game_sessions(session_id, player_id, score)
       VALUES (p_session_id, p_player_id, 0);
