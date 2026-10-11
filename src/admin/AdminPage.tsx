@@ -75,7 +75,7 @@ export default function AdminPage() {
         const result = await adminRequest(token, tab === 'players' ? 'players' : 'gifts', tab === 'players' ? { search, page } : {});
         if (stopped) return;
         if (tab === 'players') { setPlayers(result.players); setTotal(result.total); }
-        else if (tab !== 'wheel') setGifts(result.gifts);
+        else setGifts(result.gifts);
       } catch (e) { if (!stopped) setError(e instanceof Error ? e.message : 'Could not load data.'); }
       finally { if (!stopped) setLoading(false); }
     };
