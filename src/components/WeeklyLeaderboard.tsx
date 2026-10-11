@@ -34,7 +34,7 @@ export const WeeklyLeaderboard: React.FC<WeeklyLeaderboardProps> = ({
   lastSavedRunId,
   isSavingRun = false,
 }) => {
-  const { practiceOnly } = useCompetition();
+  const { practiceOnly, winner, loading: winnerLoading, unavailable: winnerUnavailable } = useCompetition();
   const [activeTab, setActiveTab] = useState<'weekly' | 'daily'>('weekly');
   const [data, setData] = useState<LeaderboardResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -201,7 +201,15 @@ export const WeeklyLeaderboard: React.FC<WeeklyLeaderboardProps> = ({
         </button>
       </div>
 
-      <TopAchievement />
+      <div className="leaderboard-reward-row">
+        <TopAchievement />
+        <section className="leaderboard-winner-card" aria-label="Last week winner">
+          <span className="stat-card-label">🏆 LAST WEEK WINNER</span>
+          <strong className="last-week-winner-name">{winner?.name ?? (winnerLoading ? 'Loading…' : winnerUnavailable ? 'Temporarily unavailable' : 'No winner yet')}</strong>
+          <small>Highest points at Saturday close • IST</small>
+        </section>
+      </div>
+      <GiftSlider />
 
       <div className="admin-profile-strip" aria-label="Admin profile">
         <button type="button" className="admin-profile-card"
@@ -362,7 +370,7 @@ export const WeeklyLeaderboard: React.FC<WeeklyLeaderboardProps> = ({
 
                     <div className="col-points">
                       <span className="stat-mono-score">
-                        {practiceOnly ? '----' : isAdmin ? '∞' : displayedPoints.toLocaleString()}
+                        {isAdmin ? '∞' : displayedPoints.toLocaleString()}
                       </span>
                     </div>
 
@@ -387,7 +395,7 @@ export const WeeklyLeaderboard: React.FC<WeeklyLeaderboardProps> = ({
                   </div>
                   <div className="col-points">
                     <span className="stat-mono-score">
-                      {practiceOnly ? '----' : (activeTab === 'daily'
+                      {(activeTab === 'daily'
                         ? playerRankEntry.dailyPoints ?? playerRankEntry.points ?? 0
                         : playerRankEntry.weeklyPoints ?? playerRankEntry.points ?? 0
                       ).toLocaleString()}
@@ -430,7 +438,6 @@ export const WeeklyLeaderboard: React.FC<WeeklyLeaderboardProps> = ({
           </div>
         )}
       </div>
-      <GiftSlider />
     </div>
   );
 };

@@ -77,7 +77,7 @@ export const ResultsModal: React.FC<ResultsModalProps> = ({
         {/* Grand Score Display */}
         <div className="results-score-card">
           <span className="results-score-label">FINAL SCORE</span>
-          <div className="results-score-number">{practiceOnly ? '----' : stats.score.toLocaleString()}</div>
+          <div className="results-score-number">{stats.score.toLocaleString()}</div>
         </div>
 
         {isSavingRun && !practiceOnly && <p role="status">Saving your leaderboard score…</p>}

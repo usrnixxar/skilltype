@@ -26,7 +26,7 @@ export const LiveStatsPanel: React.FC<LiveStatsPanelProps> = ({
   onChangePlayer,
   isPlaying,
 }) => {
-  const { practiceOnly, winner, loading, unavailable } = useCompetition();
+  const { practiceOnly } = useCompetition();
   // Format Accuracy
   const totalKeystrokes = stats.correctKeystrokes + stats.incorrectKeystrokes;
   const accuracyStr =
@@ -114,7 +114,7 @@ export const LiveStatsPanel: React.FC<LiveStatsPanelProps> = ({
         <div className="stat-card stat-card-score">
           <div className="stat-card-label">SCORE</div>
           <div className="stat-card-value stat-score-value">
-            {practiceOnly ? '----' : stats.score.toLocaleString()}
+            {stats.score.toLocaleString()}
           </div>
         </div>
 
@@ -175,12 +175,6 @@ export const LiveStatsPanel: React.FC<LiveStatsPanelProps> = ({
             {wpmStr}
           </div>
           <div className="stat-card-subtext">Target: {targetWpm} WPM</div>
-        </div>
-
-        <div className="stat-card stat-card-winner">
-          <div className="stat-card-label">🏆 LAST WEEK WINNER</div>
-          <div className="last-week-winner-name">{winner?.name ?? (loading ? 'Loading…' : unavailable ? 'Temporarily unavailable' : 'No winner yet')}</div>
-          <div className="stat-card-subtext">Highest points at Saturday close • IST</div>
         </div>
 
         {/* Practice Timer Countdown if applicable */}

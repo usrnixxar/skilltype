@@ -12,7 +12,7 @@ Choose **Top Achievement** and upload a title and JPG/PNG/WebP image (up to 2 MB
 
 ## Showcase
 
-Choose **Showcase** and upload products one at a time. You can keep multiple products; all visible showcase products appear below the leaderboard in a randomly shuffled carousel. Each remains visible for five seconds, with previous/next, dots and pause controls. The order stays stable during background refreshes unless products are added or removed. It pauses while hovered/focused and initially for reduced-motion users.
+Choose **Showcase** and upload products one at a time. You can keep multiple products; all visible showcase products appear between the achievement/winner row and Admin profile in a compact, randomly shuffled carousel. Each remains visible for five seconds, with previous/next, dots and pause controls. The order stays stable during background refreshes unless products are added or removed. It pauses while hovered/focused and initially for reduced-motion users.
 
 Edit a title or **Show in showcase**, then save. Delete removes the image and entry; hiding retains them. Images have public storage URLs, so hiding is not a privacy control. Website sections refresh every 30 seconds or on page focus; reload for an immediate update. Empty sections remain visible with COMING SOON. Existing gift uploads remain in Showcase.
 
@@ -33,3 +33,7 @@ Login is an opaque, fixed first screen. Game content is hidden and background sc
 The Edge Function validates the opaque player session against the existing Admin UUID on every operation. The database RPC is callable only by `service_role`; no service-role key is included in the browser. Player deletion is transactional and revokes sessions. Tombstones and score-write triggers prevent an in-flight score request from recreating a deleted account's leaderboard entry. Gift writes go through the authenticated backend; public clients have read access to enabled slide metadata only.
 
 Verification: production API exercised using temporary test sessions/records, including rejected non-admin access, deletion confirmation, Admin protection, revoked-session denial, image validation/upload/update/hide/delete and retry. SQL rollback checks cover student PIN disabling, deletion of linked data and score replay rejection. Browser checks cover login, confirmation/cancel, gift controls, 390px layout and account-switch access removal. Existing Sunday schedule and leaderboard rank tests pass.
+
+## Leaderboard layout and Sunday display
+
+Top Achievement and Last Week Winner occupy equal halves above the showcase. Sunday still blocks competition point increases, but numeric scores and saved points remain visible every day in stats, leaderboard, results, records and personal bests.
