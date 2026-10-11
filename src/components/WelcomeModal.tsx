@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { PlayerProfile, validatePlayerName } from '../utils/playerProfile';
 import { loginPlayer, registerGuest, SessionConflictError } from '../utils/playerSession';
-import { GraduationCap, User, Play } from 'lucide-react';
+import { GraduationCap, User, Play, Eye, EyeOff } from 'lucide-react';
 interface WelcomeModalProps {
   isOpen: boolean;
   activePlayer: PlayerProfile | null;
@@ -24,12 +24,13 @@ export const WelcomeModal: React.FC<WelcomeModalProps> = ({ isOpen, activePlayer
   const [kind, setKind] = useState<'student' | 'guest' | null>(null);
   const [name, setName] = useState('');
   const [pin, setPin] = useState('');
+  const [showPin,setShowPin]=useState(false);
   const [email,setEmail]=useState('');
   const [registerMode,setRegisterMode]=useState(false);
   const [error, setError] = useState('');
   const [notice,setNotice]=useState('');
   const [busy, setBusy] = useState(false);
-  useEffect(() => { if (isOpen) { setKind(null); setName(''); setPin('');setEmail('');setRegisterMode(false); setError('');setNotice(''); } }, [isOpen]);
+  useEffect(() => { if (isOpen) { setKind(null); setName(''); setPin('');setShowPin(false);setEmail('');setRegisterMode(false); setError('');setNotice(''); } }, [isOpen]);
   if (!isOpen || activePlayer) return null;
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -96,8 +97,8 @@ export const WelcomeModal: React.FC<WelcomeModalProps> = ({ isOpen, activePlayer
         </div>
         {kind==='guest'&&registerMode&&<div className="form-group"><label className="form-label" htmlFor="guest-email">Email address</label><input id="guest-email" className="text-input player-name-input" type="email" value={email} onChange={e=>setEmail(e.target.value)} required disabled={busy} autoComplete="email" placeholder="Enter your email" /></div>}
         <div className="form-group"><label htmlFor="student-pin" className="form-label">{kind==='student'?'Student PIN':registerMode?'Set PIN':'Guest PIN'}</label>
-          <input id="student-pin" className="text-input player-name-input" type="password" inputMode="numeric" pattern="[0-9]{6}" maxLength={6} value={pin} onChange={e => setPin(e.target.value.replace(/\D/g, ''))} required disabled={busy} placeholder={kind==='student'?'6-digit PIN from your teacher':registerMode?'Create a 6-digit PIN':'Your 6-digit PIN'} autoComplete={registerMode?'new-password':'off'} />
-          {kind==='guest'&&registerMode&&<button type="button" className="btn" disabled={busy} onClick={()=>{const a=new Uint32Array(1);crypto.getRandomValues(a);setPin(String(100000+a[0]%900000));}}>Generate PIN</button>}
+          <div className="welcome-pin-field"><input id="student-pin" className="text-input player-name-input" type={showPin?"text":"password"} inputMode="numeric" pattern="[0-9]{6}" maxLength={6} value={pin} onChange={e => setPin(e.target.value.replace(/\D/g, ''))} required disabled={busy} placeholder={kind==='student'?'6-digit PIN from your teacher':registerMode?'Create a 6-digit PIN':'Your 6-digit PIN'} autoComplete={registerMode?'new-password':'off'} />
+          <button type="button" className="welcome-pin-toggle" onClick={()=>setShowPin(v=>!v)} aria-label={showPin?'Hide PIN':'Show PIN'} aria-pressed={showPin} title={showPin?'Hide PIN':'Show PIN'}>{showPin?<EyeOff size={20}/>:<Eye size={20}/>}</button></div>
           <p className="form-hint">Use your registered name and six-digit PIN. Keep your PIN private.</p></div>
         <p className="form-hint">{kind === 'guest' ? 'Register once with full name, email and PIN. Then log in with the same name and PIN. Names remain masked on the leaderboard.' : 'Your full registered name is shown publicly and your scores stay linked to your student profile.'}</p>
         {notice&&<div className="form-hint" role="status">{notice}</div>}
