@@ -1,4 +1,5 @@
 import { TopAchievement } from './TopAchievement';
+import { SpinWheel } from './SpinWheel';
 import { GiftSlider } from './GiftSlider';
 import { useCompetition } from '../context/CompetitionContext';
 import React, { useEffect, useState, useCallback, useRef } from 'react';
@@ -12,6 +13,7 @@ import { getTimeUntilSaturdayReset } from '../utils/dateUtils';
 import { fetchCheaters, CheaterEntry, fetchAdminPresence } from '../utils/playerSession';
 import {
   Trophy,
+  Disc3,
   RotateCw,
   AlertCircle,
   Sparkles,
@@ -27,14 +29,19 @@ interface WeeklyLeaderboardProps {
   activePlayer: PlayerProfile | null;
   lastSavedRunId?: string | null;
   isSavingRun?: boolean;
+  wheelClaimRun?: {gameSessionId:string;wave:number}|null;
+  onWheelClaimed?: ()=>void;
 }
 
 export const WeeklyLeaderboard: React.FC<WeeklyLeaderboardProps> = ({
   activePlayer,
   lastSavedRunId,
   isSavingRun = false,
+  wheelClaimRun = null,
+  onWheelClaimed = () => {},
 }) => {
   const { winner, loading: winnerLoading, unavailable: winnerUnavailable } = useCompetition();
+  const [wheelOpen, setWheelOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'weekly' | 'daily'>('weekly');
   const [data, setData] = useState<LeaderboardResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -171,6 +178,7 @@ export const WeeklyLeaderboard: React.FC<WeeklyLeaderboardProps> = ({
       className="side-panel weekly-leaderboard-panel"
       aria-label="SkillType Leaderboard"
     >
+      <SpinWheel open={wheelOpen} onClose={() => setWheelOpen(false)} activePlayer={activePlayer} claimRun={wheelClaimRun} onClaimed={onWheelClaimed}/>
       {/* Header */}
       <div className="panel-header">
         <div className="panel-title-block">
@@ -179,6 +187,7 @@ export const WeeklyLeaderboard: React.FC<WeeklyLeaderboardProps> = ({
             <h2 className="panel-title">
               {activeTab === 'weekly' ? 'WEEKLY LEADERBOARD' : 'DAILY LEADERBOARD'}
             </h2>
+            <button type="button" className="wheel-open-button" aria-label="Open Spin Wheel" title="Spin Wheel" onClick={() => setWheelOpen(true)}><Disc3 size={19}/>{wheelClaimRun&&<span className="wheel-ready-dot"/>}</button>
           </div>
           <p className="panel-subtitle">
             {activeTab === 'weekly' ? (
