@@ -64,6 +64,8 @@ Deno.serve(async (req: Request) => {
       if(name.length<2||name.length>25||typeof pin!=='string'||!/^\d{6}$/.test(pin))return reply({error:'Enter your name and a 6-digit PIN'},400);
       const normalizedName=name.toLowerCase();
       if(body.action==='register-guest'){
+        const mobile=typeof body.mobile==='string'?body.mobile.trim():'';
+        if(!/^[6-9][0-9]{9}$/.test(mobile))return reply({error:'Enter a valid 10-digit mobile number'},400);
         if(!/^[^ @]+@[^ @]+\.[^ @]+$/.test(email)||email.length>180)return reply({error:'Enter a valid email address'},400);
         const [emailCheck,nameCheck]=await Promise.all([
           admin.from('guest_credentials').select('player_id').eq('email',email).limit(1),
@@ -74,7 +76,7 @@ Deno.serve(async (req: Request) => {
         const {data:profile,error:profileError}=await admin.from('player_profiles').insert({name,kind:'guest'}).select('id').single();
         if(profileError||!profile)return reply({error:'Registration unavailable'},503);
         const salt=Array.from(crypto.getRandomValues(new Uint8Array(16)),b=>b.toString(16).padStart(2,'0')).join('');
-        const {error:credentialError}=await admin.from('guest_credentials').insert({player_id:profile.id,email,login_name:normalizedName,pin_salt:salt,pin_hash:await derivePin(pin,salt)});
+        const {error:credentialError}=await admin.from('guest_credentials').insert({player_id:profile.id,email,login_name:normalizedName,mobile,pin_salt:salt,pin_hash:await derivePin(pin,salt)});
         if(credentialError){await admin.from('player_profiles').delete().eq('id',profile.id);return reply({error:'Name or email already registered'},409);}
         return reply({success:true,registered:true,message:'Registration completed. Log in with your name and PIN.'});
       }
