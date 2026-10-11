@@ -36,6 +36,12 @@ const maskGuestName = (name: string) =>
     })
     .join(' ');
 
+const derivePin=async(pin:string,salt:string)=>{
+  const material=await crypto.subtle.importKey('raw',new TextEncoder().encode(pin),'PBKDF2',false,['deriveBits']);
+  const bytes=await crypto.subtle.deriveBits({name:'PBKDF2',salt:Uint8Array.from(salt.match(/../g)!.map(x=>parseInt(x,16))),iterations:120000,hash:'SHA-256'},material,256);
+  return Array.from(new Uint8Array(bytes),b=>b.toString(16).padStart(2,'0')).join('');
+};
+
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers });
   if (req.method !== 'POST') return reply({ error: 'Method not allowed' }, 405);
@@ -50,6 +56,40 @@ Deno.serve(async (req: Request) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
       { auth: { persistSession: false } }
     );
+
+    if(body.action==='register-guest'||(body.action==='login'&&body.kind==='guest')){
+      const name=typeof body.name==='string'?body.name.trim().replace(/\\s+/g,' '):'';
+      const pin=body.pin;
+      const email=typeof body.email==='string'?body.email.trim().toLowerCase():'';
+      if(name.length<2||name.length>25||typeof pin!=='string'||!/^\\d{6}$/.test(pin))return reply({error:'Enter your name and a 6-digit PIN'},400);
+      const normalizedName=name.toLowerCase();
+      if(body.action==='register-guest'){
+        if(!/^[^ @]+@[^ @]+\\.[^ @]+$/.test(email)||email.length>180)return reply({error:'Enter a valid email address'},400);
+        const {data:existing}=await admin.from('guest_credentials').select('player_id').or(`email.eq.${email},login_name.eq.${normalizedName}`).limit(1);
+        if(existing?.length)return reply({error:'Name or email already registered. Please log in.'},409);
+        const {data:profile,error:profileError}=await admin.from('player_profiles').insert({name,kind:'guest'}).select('id').single();
+        if(profileError||!profile)return reply({error:'Registration unavailable'},503);
+        const salt=Array.from(crypto.getRandomValues(new Uint8Array(16)),b=>b.toString(16).padStart(2,'0')).join('');
+        const {error:credentialError}=await admin.from('guest_credentials').insert({player_id:profile.id,email,login_name:normalizedName,pin_salt:salt,pin_hash:await derivePin(pin,salt)});
+        if(credentialError){await admin.from('player_profiles').delete().eq('id',profile.id);return reply({error:'Name or email already registered'},409);}
+        return reply({success:true,registered:true,message:'Registration completed. Log in with your name and PIN.'});
+      }
+      if(typeof body.deviceId!=='string'||!/^[a-f0-9-]{20,80}$/.test(body.deviceId))return reply({error:'Device verification failed'},400);
+      const {data:credential,error:credError}=await admin.from('guest_credentials').select('player_id,pin_hash,pin_salt').eq('login_name',normalizedName).maybeSingle();
+      if(credError)return reply({error:'Login unavailable'},503);
+      if(!credential||await derivePin(pin,credential.pin_salt)!==credential.pin_hash)return reply({error:'Invalid name or PIN'},401);
+      const {data:previous,error:sessionErr}=await admin.from('player_sessions').select('device_id').eq('player_id',credential.player_id).gt('expires_at',new Date().toISOString());
+      if(sessionErr)return reply({error:'Session unavailable'},503);
+      if(previous?.some((row:any)=>row.device_id!==body.deviceId)&&body.forceLogoutOther!==true)return reply({error:'Account already signed in on another device',code:'ACTIVE_ON_OTHER_DEVICE'},409);
+      const {error:deleteError}=await admin.from('player_sessions').delete().eq('player_id',credential.player_id);
+      if(deleteError)return reply({error:'Login unavailable'},503);
+      const token=Array.from(crypto.getRandomValues(new Uint8Array(32)),b=>b.toString(16).padStart(2,'0')).join('');
+      const {error:insertErr}=await admin.from('player_sessions').insert({player_id:credential.player_id,token_hash:await hash(token),device_id:body.deviceId,last_seen_at:new Date().toISOString()});
+      if(insertErr)return reply({error:'Login unavailable'},503);
+      await admin.from('player_login_events').insert({player_id:credential.player_id});
+      const {data:profile}=await admin.from('player_profiles').select('id,name,kind,created_at').eq('id',credential.player_id).single();
+      return reply({success:true,profile:{id:credential.player_id,name:maskGuestName(profile?.name||name),kind:'guest',createdAt:Date.parse(profile?.created_at||new Date().toISOString()),sessionToken:token}});
+    }
 
     if (body.action === 'cheaters') {
       const { data, error } = await admin
@@ -242,6 +282,7 @@ Deno.serve(async (req: Request) => {
       );
     }
 
+    if(data?.id) await admin.from('player_login_events').insert({player_id:data.id});
     return reply({ success: true, profile: { ...data, sessionToken: token } });
   } catch {
     return reply({ error: 'Unable to process login. Please retry.' }, 400);
