@@ -40,4 +40,6 @@ Top Achievement and Last Week Winner occupy equal halves above the showcase. Sun
 
 ## Game balance
 
-Wave 1 begins at 20 WPM; speeds rise by 2–3 WPM each wave to 70 WPM at Wave 20. Later waves retain the 70 WPM cap. The Top Achievement target is 20 completed waves. New runs earn 70% fewer points: 3 per correct character, 15 per completed word (both retain the combo multiplier), and 45 × wave for a wave-clear bonus. Existing saved scores are unchanged. Sunday practice still does not award competition points. The pause panel uses 20% of the typing area, with a 180px minimum (bounded by available space) to keep controls readable.
+Wave 1 begins at 20 WPM; speeds rise by 2–3 WPM each wave to 70 WPM at Wave 20. Later waves retain the 70 WPM cap. The Top Achievement target is 20 completed waves. New runs earn 70% fewer points: 3 per correct character, 15 per completed word (both retain the combo multiplier), and 45 × wave for a wave-clear bonus. Existing saved scores are unchanged. Sunday practice still does not award competition points. The pause panel uses 30% of the typing area, with a 180px minimum (bounded by available space) to keep controls readable.
+
+Start-menu difficulty and action controls use 30% width with a 220px readable minimum bounded by available space. The hero logo/title remain unchanged.

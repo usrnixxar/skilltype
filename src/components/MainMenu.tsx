@@ -52,6 +52,7 @@ export const MainMenu: React.FC<MainMenuProps> = ({
           </div>
         )}
 
+        <div className="menu-start-controls">
         {/* Difficulty Selector */}
         <div className="menu-difficulty-row">
           <span className="difficulty-title">DIFFICULTY:</span>
@@ -104,6 +105,7 @@ export const MainMenu: React.FC<MainMenuProps> = ({
               <span>Settings</span>
             </button>
           </div>
+        </div>
         </div>
       </div>
     </div>
