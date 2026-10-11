@@ -145,7 +145,7 @@ export const App: React.FC = () => {
     setIsSavingRun(true);
     try {
       await submitGameRun(payload);
-      if ((payload.wave ?? 0) >= 11 && activePlayer?.type !== 'guest') {
+      if ((payload.wave ?? 0) >= 11 && activePlayer?.kind === 'student') {
         setWheelClaimRun({ gameSessionId: id, wave: payload.wave! });
       }
       if (retryPayloadRef.current?.gameSessionId === id) retryPayloadRef.current = null;
@@ -685,6 +685,8 @@ export const App: React.FC = () => {
             activePlayer={activePlayer}
             lastSavedRunId={lastSavedRunId}
             isSavingRun={isSavingRun}
+            wheelClaimRun={wheelClaimRun}
+            onWheelClaimed={() => setWheelClaimRun(null)}
           />
         </aside>
       </div>
