@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { X, Gift, RotateCw } from 'lucide-react';
 import { PlayerProfile } from '../utils/playerProfile';
-import { giftImageUrl } from '../utils/adminApi';
+import { ADMIN_PLAYER_ID, giftImageUrl } from '../utils/adminApi';
 import { WheelStatus, wheelRequest } from '../utils/wheelApi';
 
 const COLORS = ['#ef4444','#f97316','#f59e0b','#16a34a','#0891b2','#4f46e5','#9333ea','#db2777'];
@@ -11,6 +11,7 @@ export function SpinWheel({ open, onClose, activePlayer, claimRun, onClaimed }: 
   claimRun:{gameSessionId:string;wave:number}|null; onClaimed:()=>void;
 }) {
   const [status,setStatus]=useState<WheelStatus|null>(null);
+  const isAdminTest = activePlayer?.id === ADMIN_PLAYER_ID && status?.adminTestMode === true;
   const [busy,setBusy]=useState(false);
   const [error,setError]=useState('');
   const [result,setResult]=useState<string|null>(null);
@@ -24,7 +25,7 @@ export function SpinWheel({ open, onClose, activePlayer, claimRun, onClaimed }: 
     try {setStatus(await wheelRequest(activePlayer.sessionToken,'status'));setError('');}
     catch(e){setError(e instanceof Error?e.message:'Unable to load wheel');}
   },[activePlayer?.sessionToken]);
-  useEffect(()=>{if(open){setResult(null);void load();}},[open,load]);
+  useEffect(()=>{if(open){setStatus(null);setResult(null);void load();}},[open,load]);
   useEffect(()=>{if(!open)return;const listener=(e:KeyboardEvent)=>{if(e.key==='Escape'&&!spinning)onClose();};window.addEventListener('keydown',listener);return()=>window.removeEventListener('keydown',listener)},[open,onClose,spinning]);
   if(!open)return null;
   // Alternating visual order; database slot IDs and admin probabilities stay unchanged.
@@ -68,8 +69,8 @@ export function SpinWheel({ open, onClose, activePlayer, claimRun, onClaimed }: 
    <section role="dialog" aria-modal="true" aria-label="SkillType Spin Wheel" className="spin-modal">
     <button className="spin-close" aria-label="Close Spin Wheel" disabled={spinning} onClick={onClose}><X size={21}/></button>
     <h2>🎡 SKILLTYPE SPIN WHEEL</h2>
-    <p className="spin-note">{status?.adminTestMode ? 'Admin Test Mode — Unlimited spins, no student tokens used.' : 'Cross 10 waves to claim 1 spin token. Maximum 3 tokens per student per day (IST).'}</p>
-    {!status?.adminTestMode && <p className="spin-token-count">Available: <strong>{status?.available??'–'}</strong> / Earned today: <strong>{status?.earnedToday??'–'}/3</strong></p>}
+    <p className="spin-note">{isAdminTest ? 'Admin Test Mode — Unlimited spins, no student tokens used.' : 'Cross 10 waves to claim 1 spin token. Maximum 3 tokens per student per day (IST).'}</p>
+    {!isAdminTest && <p className="spin-token-count">Available: <strong>{status?.available??'–'}</strong> / Earned today: <strong>{status?.earnedToday??'–'}/3</strong></p>}
     <div className="spin-wheel-stage">
       <div className="spin-pointer">▼</div>
       <div className="spin-wheel-disc" style={{transform:`rotate(${angle}deg)`,background:`conic-gradient(${COLORS.map((c,i)=>`${c} ${i*45}deg ${(i+1)*45}deg`).join(',')})`}}>
@@ -83,7 +84,7 @@ export function SpinWheel({ open, onClose, activePlayer, claimRun, onClaimed }: 
     {error&&<p role="alert" className="spin-error">{error}</p>}
     {result&&<p role="status" className="spin-result">{result==='Try Again'?'Try Again — Better luck next time!':`🎉 You won: ${result}`}</p>}
     {claimRun&&<button className="spin-primary" disabled={busy||spinning||!status||status.remainingEarnable<=0} onClick={()=>void claim()}>{busy?'Processing…':'Claim Spin for 10+ Waves'}</button>}
-    <button className="spin-primary" disabled={busy||spinning||(!status?.available&&!status?.adminTestMode)} onClick={()=>void spin()}><RotateCw size={16}/>{spinning?'Spinning…':'SPIN NOW'}</button>
+    <button className="spin-primary" disabled={busy||spinning||(!status?.available&&!isAdminTest)} onClick={()=>void spin()}><RotateCw size={16}/>{spinning?'Spinning…':'SPIN NOW'}</button>
     <p className="spin-disclaimer">Results are selected by the server. Spin animation is for display only.</p>
    </section>
   </div>;
