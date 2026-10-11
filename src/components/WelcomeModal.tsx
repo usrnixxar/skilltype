@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { PlayerProfile, validatePlayerName } from '../utils/playerProfile';
-import { loginPlayer, SessionConflictError } from '../utils/playerSession';
+import { loginPlayer, registerGuest, SessionConflictError } from '../utils/playerSession';
 import { GraduationCap, User, Play } from 'lucide-react';
 interface WelcomeModalProps {
   isOpen: boolean;
@@ -24,9 +24,11 @@ export const WelcomeModal: React.FC<WelcomeModalProps> = ({ isOpen, activePlayer
   const [kind, setKind] = useState<'student' | 'guest' | null>(null);
   const [name, setName] = useState('');
   const [pin, setPin] = useState('');
+  const [email,setEmail]=useState('');
+  const [registerMode,setRegisterMode]=useState(false);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
-  useEffect(() => { if (isOpen) { setKind(null); setName(''); setPin(''); setError(''); } }, [isOpen]);
+  useEffect(() => { if (isOpen) { setKind(null); setName(''); setPin('');setEmail('');setRegisterMode(false); setError(''); } }, [isOpen]);
   if (!isOpen || activePlayer) return null;
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -36,6 +38,11 @@ export const WelcomeModal: React.FC<WelcomeModalProps> = ({ isOpen, activePlayer
     if (kind === 'student' && !/^\d{6}$/.test(pin)) { setError('Enter your 6-digit student PIN'); return; }
     setBusy(true); setError('');
     try {
+      if(kind==='guest'&&registerMode){
+        await registerGuest(result.trimmedName,email,pin);
+        setRegisterMode(false);setError('Registered successfully. Now log in with your name and PIN.');
+        return;
+      }
       onSavePlayerAndStart(await loginPlayer(kind, result.trimmedName, pin));
     } catch (err) {
       if (err instanceof SessionConflictError) {
@@ -80,18 +87,20 @@ export const WelcomeModal: React.FC<WelcomeModalProps> = ({ isOpen, activePlayer
       </div>
       <div className="login-choices" aria-label="Login type">
         <button type="button" aria-pressed={kind === 'student'} className={`login-choice ${kind === 'student' ? 'selected' : ''}`} disabled={busy} onClick={() => { setKind('student'); setError(''); }}><GraduationCap size={24} /><strong>Student</strong><small>Name + 6-digit PIN</small></button>
-        <button type="button" aria-pressed={kind === 'guest'} className={`login-choice ${kind === 'guest' ? 'selected' : ''}`} disabled={busy} onClick={() => { setKind('guest'); setPin(''); setError(''); }}><User size={24} /><strong>Guest</strong><small>Name only</small></button>
+        <button type="button" aria-pressed={kind === 'guest'} className={`login-choice ${kind === 'guest' ? 'selected' : ''}`} disabled={busy} onClick={() => { setKind('guest'); setPin(''); setError(''); }}><User size={24} /><strong>Guest</strong><small>Name + PIN</small></button>
       </div>
       {kind && <form onSubmit={submit} className="welcome-form">
         <div className="form-group"><label htmlFor="player-name-input" className="form-label">Your full name</label>
           <input id="player-name-input" className="text-input player-name-input" value={name} onChange={e => setName(e.target.value)} minLength={2} maxLength={25} required disabled={busy} autoComplete="name" placeholder="Enter your name" autoFocus />
         </div>
-        {kind === 'student' && <div className="form-group"><label htmlFor="student-pin" className="form-label">Student PIN</label>
+        {kind==='guest' && <div className="login-choices"><button type="button" className={registerMode?'login-choice':'login-choice selected'} onClick={()=>setRegisterMode(false)}>Login</button><button type="button" className={registerMode?'login-choice selected':'login-choice'} onClick={()=>setRegisterMode(true)}>Create / New User</button></div>}
+        {kind==='guest'&&registerMode&&<div className="form-group"><label className="form-label" htmlFor="guest-email">Email address</label><input id="guest-email" className="text-input player-name-input" type="email" value={email} onChange={e=>setEmail(e.target.value)} required disabled={busy} autoComplete="email" placeholder="Enter your email" /></div>}
+        {kind && <div className="form-group"><label htmlFor="student-pin" className="form-label">{kind==='student'?'Student PIN':'Guest PIN'}</label>
           <input id="student-pin" className="text-input player-name-input" type="text" inputMode="numeric" pattern="[0-9]{6}" maxLength={6} value={pin} onChange={e => setPin(e.target.value.replace(/\D/g, ''))} required disabled={busy} placeholder="6-digit PIN from your teacher" autoComplete="off" />
-          <p className="form-hint">Use the same name and PIN each time. Keep your PIN private.</p></div>}
-        <p className="form-hint">{kind === 'guest' ? 'Guest names are shown publicly with only the first and last letters visible (example: N***r).' : 'Your full registered name is shown publicly and your scores stay linked to your student profile.'}</p>
+          <p className="form-hint">Use your registered name and six-digit PIN. Keep your PIN private.</p></div>}
+        <p className="form-hint">{kind === 'guest' ? 'Register once with name, email and PIN. Then log in with the same name and PIN. Names remain masked on the leaderboard.' : 'Your full registered name is shown publicly and your scores stay linked to your student profile.'}</p>
         {error && <div className="form-error-msg" role="alert">{error}</div>}
-        <button type="submit" className="btn btn-primary btn-welcome-start" disabled={busy}><Play size={18} /><span>{busy ? 'Checking…' : 'Log in & Play'}</span></button>
+        <button type="submit" className="btn btn-primary btn-welcome-start" disabled={busy}><Play size={18} /><span>{busy ? 'Checking…' : kind==='guest'&&registerMode?'Register Guest':'Log in & Play'}</span></button>
       </form>}
       <div className="welcome-admin-link"><a href="/admin">Admin login</a></div>
     </div>
