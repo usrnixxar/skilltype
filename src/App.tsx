@@ -35,7 +35,6 @@ import { SettingsModal } from './components/SettingsModal';
 import { useKeyboardGate } from './hooks/useKeyboardGate';
 import { LiveStatsPanel } from './components/LiveStatsPanel';
 import { WeeklyLeaderboard } from './components/WeeklyLeaderboard';
-import { wheelRequest } from './utils/wheelApi';
 import { logoutPlayer, validatePlayerSession } from './utils/playerSession';
 import { WelcomeModal } from './components/WelcomeModal';
 
