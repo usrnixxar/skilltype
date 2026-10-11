@@ -36,6 +36,39 @@ Deno.serve(async (req: Request) => {
     })});
     if(body.action==='delete-player')return reply({success:true,...await rpc('delete-player',{playerId:body.playerId,confirm:body.confirm})});
     if(body.action==='gifts')return reply({success:true,...await rpc('gifts')});
+    if(body.action==='wheel-prizes'){
+      const {data,error}=await client.from('spin_prizes').select('slot,title,image_path,chance').order('slot');
+      if(error)return reply({error:'Unable to load wheel prizes'},503);
+      return reply({success:true,prizes:data});
+    }
+    if(body.action==='wheel-save'){
+      const slot=Number(body.slot),chance=Number(body.chance);
+      if(!Number.isInteger(slot)||slot<5||slot>8||!Number.isFinite(chance)||chance<0||chance>100||!Number.isInteger(chance*100)||typeof body.title!=='string'||body.title.trim().length<1||body.title.trim().length>80)return reply({error:'Invalid wheel slot, title or chance'},400);
+      const {data:existing,error:readError}=await client.from('spin_prizes').select('*').order('slot');
+      if(readError||!existing)return reply({error:'Unable to read wheel settings'},503);
+      const previous=existing.find(p=>p.slot===slot);
+      if(!previous)return reply({error:'Unknown wheel slot'},404);
+      const total=existing.filter(p=>p.slot>4&&p.slot!==slot&&p.image_path).reduce((s,p)=>s+Number(p.chance),0)+chance;
+      if(total>100.00001)return reply({error:'Total product chance cannot exceed 100%'},400);
+      let imagePath=previous.image_path;
+      if(body.image){
+        if(typeof body.image!=='string'||body.image.length>2800000)return reply({error:'Image must be under 2 MB'},400);
+        let bytes:Uint8Array;try{bytes=Uint8Array.from(atob(body.image),c=>c.charCodeAt(0));}catch{return reply({error:'Invalid image'},400)}
+        const png=bytes.length>8&&bytes.slice(0,8).every((b,i)=>b===[137,80,78,71,13,10,26,10][i]);
+        const jpg=bytes.length>3&&bytes[0]===255&&bytes[1]===216&&bytes[2]===255;
+        const webp=bytes.length>12&&String.fromCharCode(...bytes.slice(0,4))==='RIFF'&&String.fromCharCode(...bytes.slice(8,12))==='WEBP';
+        if(bytes.length>2097152||bytes.length<12||(!png&&!jpg&&!webp))return reply({error:'Upload a JPG, PNG or WebP under 2MB'},400);
+        const ext=png?'png':jpg?'jpg':'webp';imagePath=`wheel-${crypto.randomUUID()}.${ext}`;
+        const {error:uploadError}=await client.storage.from('gift-images').upload(imagePath,bytes,{contentType:png?'image/png':jpg?'image/jpeg':'image/webp',upsert:false});
+        if(uploadError)return reply({error:'Unable to upload prize image'},503);
+      }
+      if(!imagePath&&chance>0)return reply({error:'Upload an image before assigning a chance'},400);
+      const {error:saveError}=await client.from('spin_prizes').update({title:body.title.trim(),image_path:imagePath,chance,updated_at:new Date().toISOString()}).eq('slot',slot);
+      if(saveError)return reply({error:'Unable to save wheel settings'},503);
+      if(body.image&&previous.image_path&&previous.image_path!==imagePath)await client.storage.from('gift-images').remove([previous.image_path]);
+      return reply({success:true});
+    }
+
     if(body.action==='upload-gift'){
       const section=body.section ?? 'showcase';
       if(!['showcase','achievement'].includes(section))return reply({error:'Invalid product section'},400);
