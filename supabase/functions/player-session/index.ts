@@ -65,8 +65,12 @@ Deno.serve(async (req: Request) => {
       const normalizedName=name.toLowerCase();
       if(body.action==='register-guest'){
         if(!/^[^ @]+@[^ @]+\.[^ @]+$/.test(email)||email.length>180)return reply({error:'Enter a valid email address'},400);
-        const {data:existing}=await admin.from('guest_credentials').select('player_id').or(`email.eq.${email},login_name.eq.${normalizedName}`).limit(1);
-        if(existing?.length)return reply({error:'Name or email already registered. Please log in.'},409);
+        const [emailCheck,nameCheck]=await Promise.all([
+          admin.from('guest_credentials').select('player_id').eq('email',email).limit(1),
+          admin.from('guest_credentials').select('player_id').eq('login_name',normalizedName).limit(1)
+        ]);
+        if(emailCheck.error||nameCheck.error)return reply({error:'Registration unavailable'},503);
+        if(emailCheck.data?.length||nameCheck.data?.length)return reply({error:'Name or email already registered. Please log in.'},409);
         const {data:profile,error:profileError}=await admin.from('player_profiles').insert({name,kind:'guest'}).select('id').single();
         if(profileError||!profile)return reply({error:'Registration unavailable'},503);
         const salt=Array.from(crypto.getRandomValues(new Uint8Array(16)),b=>b.toString(16).padStart(2,'0')).join('');
