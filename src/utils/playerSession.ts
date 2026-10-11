@@ -89,8 +89,8 @@ export async function loginPlayer(
   return data.profile;
 }
 
-export async function registerGuest(name:string,email:string,pin:string,mobile:string):Promise<void>{
-  await sessionRequest({action:'register-guest',name,email,pin,mobile});
+export async function registerGuest(name:string,email:string,pin:string):Promise<void>{
+  await sessionRequest({action:'register-guest',name,email,pin});
 }
 
 export async function validatePlayerSession(profile: PlayerProfile): Promise<boolean> {
