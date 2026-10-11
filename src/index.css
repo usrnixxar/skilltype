@@ -3482,3 +3482,7 @@ body:has(.admin-image-modal[open]) { overflow: hidden; }
   .weekly-leaderboard-panel .leaderboard-reward-row .gift-showcase-heading h3 { font-size: 9px; }
   .weekly-leaderboard-panel .leaderboard-reward-row .gift-caption { font-size: 10px; }
 }
+
+/* Discourage casual image copying without interfering with clicks or accessibility. */
+.gift-showcase .gift-image-stage img,
+.top-achievement-image { -webkit-user-drag: none; user-select: none; -webkit-user-select: none; }
