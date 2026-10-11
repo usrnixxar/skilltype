@@ -46,8 +46,13 @@ Deno.serve(async (req: Request) => {
     if(body.action==='delete-player')return reply({success:true,...await rpc('delete-player',{playerId:body.playerId,confirm:body.confirm})});
     if(body.action==='gifts')return reply({success:true,...await rpc('gifts')});
     if(body.action==='analytics'){
-      const {data:visits,error:visitsError}=await client.from('site_visitors').select('visitor_id,visit_day').gte('visit_day',new Date(Date.now()-95*86400000).toISOString().slice(0,10)).limit(100000);
-      if(visitsError)return reply({error:'Analytics unavailable'},503);
+      const visits:any[]=[];
+      for(let page=0;page<100;page++){
+        const {data,error}=await client.from('site_visitors').select('visitor_id,visit_day').gte('visit_day',new Date(Date.now()-200*86400000).toISOString().slice(0,10)).order('visit_day',{ascending:true}).order('visitor_id',{ascending:true}).range(page*1000,(page+1)*1000-1);
+        if(error)return reply({error:'Analytics unavailable'},503);
+        visits.push(...(data||[]));
+        if(!data||data.length<1000)break;
+      }
       return reply({success:true,visits});
     }
     if(body.action==='player-detail'){
