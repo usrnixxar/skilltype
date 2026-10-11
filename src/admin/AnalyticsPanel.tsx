@@ -19,7 +19,6 @@ export function AnalyticsPanel({token}:{token:string}){
   return {date,day,label:period==='daily'?date.toLocaleDateString('en-IN',{day:'2-digit',month:'short'}):period==='weekly'?'Week '+(i+1):date.toLocaleDateString('en-IN',{month:'short',year:'2-digit'})};
  });
  const groups=dates.map(({date,label,day})=>{
-  const end=new Date(date);if(period==='weekly'){end.setDate(end.getDate()+7)}else if(period==='monthly'){end.setMonth(end.getMonth()+1)}else end.setDate(end.getDate()+1);
   const rangeStart=period==='daily'?day:period==='weekly'?new Date(date.getTime()-(date.getDay()*86400000)).toISOString().slice(0,10):day.slice(0,7)+'-01';
   const rangeEnd=period==='daily'?day:period==='weekly'?new Date(new Date(rangeStart+'T12:00:00').getTime()+6*86400000).toISOString().slice(0,10):new Date(Date.UTC(date.getFullYear(),date.getMonth()+1,0)).toISOString().slice(0,10);
   return {label,count:new Set(visits.filter(v=>v.visit_day>=rangeStart&&v.visit_day<=rangeEnd).map(v=>v.visitor_id)).size};
