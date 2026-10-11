@@ -11,7 +11,7 @@ export function TopAchievement() {
     return () => { stopped = true; clearInterval(timer); window.removeEventListener('focus', refresh); };
   }, []);
   return <section className="top-achievement-wrap" aria-label="Top achievement"><div className="top-achievement-box">
-    {product && <img src={giftImageUrl(product.image_path)} alt={product.title} className="top-achievement-image" draggable={false} />}
+    {product && <img src={giftImageUrl(product.image_path)} alt={product.title} className="top-achievement-image" draggable={false} onContextMenu={(event) => event.preventDefault()} />}
     <div className="top-achievement-copy"><span className="top-achievement-kicker">TOP ACHIEVEMENT</span>
       <strong className="top-achievement-title">{product?.title || 'COMING SOON'}</strong><span className="top-achievement-subtitle">Complete 20 Waves to Win</span>
     </div></div></section>;
