@@ -1,4 +1,3 @@
-import { getKolkataComponents } from './dateUtils';
 
 let serverOffsetMs = 0;
 export function syncCompetitionClock(serverTime: number) {
@@ -6,5 +5,6 @@ export function syncCompetitionClock(serverTime: number) {
 }
 export function competitionNow() { return Date.now() + serverOffsetMs; }
 export function isSundayPractice(at = competitionNow()) {
-  return getKolkataComponents(at).dayOfWeek === 0;
+  void at;
+  return false;
 }
