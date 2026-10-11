@@ -30,10 +30,19 @@ Deno.serve(async (req: Request) => {
     // Never authorize using a player ID sent by the browser.
     await rpc('auth');
     if(body.action==='auth')return reply({success:true,authorized:true});
-    if(body.action==='players')return reply({success:true,...await rpc('players',{
-      search:typeof body.search==='string'?body.search.slice(0,80):'',
-      page:Number.isInteger(body.page)&&body.page>=0?Math.min(body.page,100000):0,
-    })});
+    if(body.action==='players'){
+      const data=await rpc('players',{
+        search:typeof body.search==='string'?body.search.slice(0,80):'',
+        page:Number.isInteger(body.page)&&body.page>=0?Math.min(body.page,100000):0,
+      });
+      const ids=(data.players||[]).map((p:any)=>p.id);
+      if(ids.length){
+        const {data:sessions}=await client.from('player_sessions').select('player_id,last_seen_at,expires_at').in('player_id',ids);
+        const now=Date.now();
+        data.players=data.players.map((p:any)=>({...p,online:(sessions||[]).some((row:any)=>row.player_id===p.id&&Date.parse(row.expires_at)>now&&Date.parse(row.last_seen_at)>now-90000)}));
+      }
+      return reply({success:true,...data});
+    }
     if(body.action==='delete-player')return reply({success:true,...await rpc('delete-player',{playerId:body.playerId,confirm:body.confirm})});
     if(body.action==='gifts')return reply({success:true,...await rpc('gifts')});
     if(body.action==='analytics'){
@@ -45,11 +54,12 @@ Deno.serve(async (req: Request) => {
       if(typeof body.playerId!=='string'||!uuid.test(body.playerId))return reply({error:'Invalid player'},400);
       const {data:profile,error:profileError}=await client.from('player_profiles').select('id,name,kind,created_at').eq('id',body.playerId).maybeSingle();
       if(profileError||!profile)return reply({error:'Player not found'},404);
+      const {data:guestAccount}=await client.from('guest_credentials').select('email').eq('player_id',profile.id).maybeSingle();
       const {data:sessions,error:sessionError}=await client.from('player_sessions').select('last_seen_at,expires_at').eq('player_id',profile.id).order('last_seen_at',{ascending:false}).limit(10);
       if(sessionError)return reply({error:'Activity unavailable'},503);
       const {data:loginEvents}=await client.from('player_login_events').select('logged_in_at').eq('player_id',profile.id).order('logged_in_at',{ascending:false}).limit(10);
       const now=Date.now();
-      return reply({success:true,profile,online:(sessions||[]).some((row:any)=>Date.parse(row.expires_at)>now&&Date.parse(row.last_seen_at)>now-90000),lastSeen:sessions?.[0]?.last_seen_at||null,recentActivity:(sessions||[]).map((v:any)=>v.last_seen_at),loginHistory:(loginEvents||[]).map((v:any)=>v.logged_in_at)});
+      return reply({success:true,profile:{...profile,email:guestAccount?.email||null},online:(sessions||[]).some((row:any)=>Date.parse(row.expires_at)>now&&Date.parse(row.last_seen_at)>now-90000),lastSeen:sessions?.[0]?.last_seen_at||null,recentActivity:(sessions||[]).map((v:any)=>v.last_seen_at),loginHistory:(loginEvents||[]).map((v:any)=>v.logged_in_at)});
     }
 
     if(body.action==='wheel-prizes'){
