@@ -1,6 +1,6 @@
 import { getSupabaseClient } from './supabaseClient';
 export const ADMIN_PLAYER_ID = '5c99b1c8-e130-4c27-a750-88e35362c581';
-export interface ManagedPlayer { id: string; name: string; kind: string; points: number; online?: boolean; created_at: string; }
+export interface ManagedPlayer { id: string; name: string; kind: string; points: number; online?: boolean; email?: string|null; created_at: string; }
 export type ProductSection = 'showcase' | 'achievement';
 export interface GiftSlide { section: ProductSection; id: string; title: string; image_path: string; enabled: boolean; sort_order: number; created_at: string; }
 export async function adminRequest(sessionToken: string, action: string, payload: Record<string, unknown> = {}) {
