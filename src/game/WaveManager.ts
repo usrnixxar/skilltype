@@ -3,35 +3,10 @@
 import { EnemyType, WaveConfig } from './types';
 import { Difficulty } from '../utils/storage';
 
-/**
- * Target WPM mapping per level / wave:
- * Wave 1 = 25 WPM (starting baseline)
- * Wave 2 = 28 WPM
- * Wave 3 = 30 WPM
- * Wave 4 = 33 WPM
- * Wave 5 = 35 WPM
- * Followed by smooth progression up to Level 15 (70 WPM).
- */
+/** Target typing pace rises smoothly from 20 WPM at Wave 1 to 70 at Wave 20. */
 export function getTargetWPM(level: number): number {
-  const wpmByLevel = [
-    25, // Level 1 (25 WPM baseline)
-    28, // Level 2
-    30, // Level 3
-    33, // Level 4
-    35, // Level 5
-    38, // Level 6
-    42, // Level 7
-    46, // Level 8
-    50, // Level 9
-    54, // Level 10
-    58, // Level 11
-    62, // Level 12
-    65, // Level 13
-    68, // Level 14
-    70  // Level 15 (max difficulty)
-  ];
-
-  const safeLevel = Math.min(Math.max(level, 1), 15);
+  const wpmByLevel = [20, 23, 25, 28, 31, 33, 36, 38, 41, 44, 46, 49, 52, 54, 57, 59, 62, 65, 67, 70];
+  const safeLevel = Math.min(Math.max(Math.floor(level), 1), 20);
   return wpmByLevel[safeLevel - 1];
 }
 
@@ -85,7 +60,7 @@ export class WaveManager {
     // Enemy count scales with wave
     const totalEnemies = Math.min(30, Math.floor((4 + wave * 2) * diffMult));
 
-    // Spawn interval dynamically calculated from level target WPM (25 WPM at L1 to 70 WPM at L15)
+    // Spawn interval dynamically calculated from level target WPM (20 WPM at L1 to 70 WPM at L20)
     const targetWpm = getTargetWPM(wave);
     const spawnIntervalMs = Math.round(60000 / targetWpm);
 
@@ -105,7 +80,7 @@ export class WaveManager {
       if (scoutCount < 1) scoutCount = 1;
     }
 
-    // Smooth speed scaling synchronized with target WPM (Wave 1 at 25 WPM has 1.0 base speed)
+    // Keep the existing 25-WPM movement calibration: Wave 1 now runs at 0.8 base speed.
     const speedMultiplier = targetWpm / 25;
 
     return {

@@ -103,12 +103,12 @@ export class TargetingSystem {
       this.setTarget(matchedEnemy);
       matchedEnemy.typedIndex = 1;
 
-      // Base 10 points per character * current multiplier
-      const charScore = 10 * currentMultiplier;
+      // Base 3 points per character (70% less) * current multiplier
+      const charScore = 3 * currentMultiplier;
 
       // Check if 1-letter word completed (rare, but supported safely)
       if (matchedEnemy.typedIndex >= matchedEnemy.word.length) {
-        const wordBonus = 50 * currentMultiplier;
+        const wordBonus = 15 * currentMultiplier;
         const finished = matchedEnemy;
         this.clearTarget();
         return {
@@ -135,11 +135,11 @@ export class TargetingSystem {
     if (lowerKey === expectedChar) {
       // Correct letter
       target.typedIndex++;
-      const charScore = 10 * currentMultiplier;
+      const charScore = 3 * currentMultiplier;
 
       // Check if word completed
       if (target.typedIndex >= target.word.length) {
-        const wordBonus = 50 * currentMultiplier;
+        const wordBonus = 15 * currentMultiplier;
         const finishedEnemy = target;
         this.clearTarget();
         return {

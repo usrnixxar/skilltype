@@ -203,26 +203,26 @@ describe('SkillType User Acceptance Test Scenarios (1 to 10)', () => {
     expect(lbW39History.entries[0].weeklyPoints).toBe(5850);
   });
 
-  it('TEST 9: Wave 1 speed starts at 25 WPM with synchronized word spawn interval', () => {
+  it('TEST 9: Wave 1 speed starts at 20 WPM with synchronized word spawn interval', () => {
     const waveManager = new WaveManager();
     expect(waveManager.getCurrentWave()).toBe(1);
-    expect(getTargetWPM(1)).toBe(25);
-    // Interval for 25 WPM: 60000 / 25 = 2400 ms
-    expect(waveManager.getSpawnIntervalMs()).toBe(2400);
+    expect(getTargetWPM(1)).toBe(20);
+    // Interval for 20 WPM: 60000 / 20 = 3000 ms
+    expect(waveManager.getSpawnIntervalMs()).toBe(3000);
 
-    // Wave 2 = 28 WPM
-    expect(getTargetWPM(2)).toBe(28);
-    // Wave 3 = 30 WPM
-    expect(getTargetWPM(3)).toBe(30);
-    // Wave 4 = 33 WPM
-    expect(getTargetWPM(4)).toBe(33);
-    // Wave 5 = 35 WPM
-    expect(getTargetWPM(5)).toBe(35);
+    // Wave 2 = 23 WPM
+    expect(getTargetWPM(2)).toBe(23);
+    // Wave 3 = 25 WPM
+    expect(getTargetWPM(3)).toBe(25);
+    // Wave 4 = 28 WPM
+    expect(getTargetWPM(4)).toBe(28);
+    // Wave 5 = 31 WPM
+    expect(getTargetWPM(5)).toBe(31);
 
     const wave1Config = waveManager.generateWaveConfig(1, 'normal');
-    expect(wave1Config.targetWpm).toBe(25);
-    expect(wave1Config.spawnIntervalMs).toBe(2400);
-    expect(wave1Config.speedMultiplier).toBe(1.0);
+    expect(wave1Config.targetWpm).toBe(20);
+    expect(wave1Config.spawnIntervalMs).toBe(3000);
+    expect(wave1Config.speedMultiplier).toBe(0.8);
   });
 
   it('Validates Saturday reset calculation in Asia/Kolkata timezone', () => {

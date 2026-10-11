@@ -637,7 +637,7 @@ export class GameEngine {
       );
 
       if (isWaveComplete) {
-        const bonusScore = isSundayPractice() ? 0 : this.stats.wave * 150;
+        const bonusScore = isSundayPractice() ? 0 : this.stats.wave * 45;
         this.stats.score += bonusScore;
         this.setState('wave_transition');
         soundEngine.playWaveComplete();

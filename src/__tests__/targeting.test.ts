@@ -54,7 +54,7 @@ describe('TargetingSystem', () => {
     const result = targeting.processKey('n', [enemy], player, 1);
 
     expect(result.status).toBe('hit');
-    expect(result.charScoreAwarded).toBe(10);
+    expect(result.charScoreAwarded).toBe(3);
     expect(enemy.typedIndex).toBe(1);
     expect(targeting.getCurrentTarget()?.id).toBe('e1');
   });
@@ -77,8 +77,8 @@ describe('TargetingSystem', () => {
 
     const result = targeting.processKey('r', [enemy], player, 2);
     expect(result.status).toBe('word_complete');
-    expect(result.charScoreAwarded).toBe(20); // 10 * 2
-    expect(result.wordScoreAwarded).toBe(100); // 50 * 2
+    expect(result.charScoreAwarded).toBe(6); // 3 * 2
+    expect(result.wordScoreAwarded).toBe(30); // 15 * 2
     expect(targeting.getCurrentTarget()).toBeNull();
   });
 
