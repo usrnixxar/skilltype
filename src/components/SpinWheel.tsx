@@ -60,7 +60,7 @@ export function SpinWheel({ open, onClose, activePlayer, claimRun, onClaimed }: 
         setSpinning(false);
         setResult(prizeTitle);
         void load();
-      },5000);
+      },6000);
     }catch(e){setError(e instanceof Error?e.message:'Spin failed')}
     finally{setBusy(false)}
   };
