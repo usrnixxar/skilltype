@@ -45,7 +45,7 @@ export function GiftSlider() {
       <div className="gift-showcase-heading"><h3><Gift size={18} /> GIFT SHOWCASE</h3></div>
       {gift ? <>
         <div className="gift-image-stage">
-          <img src={giftImageUrl(gift.image_path)} alt={gift.title} loading="lazy" />
+          <img src={giftImageUrl(gift.image_path)} alt={gift.title} loading="lazy" draggable={false} onContextMenu={(event) => event.preventDefault()} />
         </div>
         <strong className="gift-caption">{gift.title}</strong>
       </> : <div className="gift-empty"><Gift size={36} aria-hidden="true" /><strong>COMING SOON</strong></div>}
