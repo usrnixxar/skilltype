@@ -37,8 +37,18 @@ import { LiveStatsPanel } from './components/LiveStatsPanel';
 import { WeeklyLeaderboard } from './components/WeeklyLeaderboard';
 import { logoutPlayer, validatePlayerSession } from './utils/playerSession';
 import { WelcomeModal } from './components/WelcomeModal';
+import { getSupabaseClient } from './utils/supabaseClient';
 
 export const App: React.FC = () => {
+  useEffect(() => {
+    try {
+      const key='skilltype_visitor_id';
+      let id=localStorage.getItem(key);
+      if(!id){id=crypto.randomUUID();localStorage.setItem(key,id)}
+      const client=getSupabaseClient();
+      if(client)void client.functions.invoke('site-visit',{body:{visitorId:id}}).catch(()=>{});
+    }catch{/* analytics must never interrupt the game */}
+  }, []);
   const { isMobile, isKeyboardCheckOpen, withKeyboard, cancelKeyboardCheck, keyboardGate } = useKeyboardGate();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const engineRef = useRef<GameEngine | null>(null);
