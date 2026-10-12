@@ -86,7 +86,7 @@ export const LiveStatsPanel: React.FC<LiveStatsPanelProps> = ({
           <User size={18} />
         </div>
         <div className="player-meta-block">
-          <div className="player-meta-label">{activePlayer?.kind === 'student' ? `PIN: ${activePlayer.pin}` : 'Not a student'}</div>
+          <div className="player-meta-label">{activePlayer?.kind === 'student' ? 'Student' : 'Not a student'}</div>
           <div
             className="player-meta-name"
             title={(activePlayer?.name || '') || 'Enter Name'}

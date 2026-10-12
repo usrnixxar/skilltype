@@ -1,6 +1,6 @@
 # SkillType Admin
 
-Open https://skilltype.vercel.app/admin or choose **Admin login** on the login screen. Use the existing registered Admin name and PIN. An existing Admin session opens the console directly. Student/guest sessions cannot manage data; log out before switching accounts.
+Open https://skilltype.vercel.app/admin or choose **Admin login** on the login screen. Use the existing registered Admin name and PIN. Each new page load requires Admin login. Student/guest accounts cannot manage Admin data.
 
 ## Players
 
@@ -43,3 +43,7 @@ Top Achievement and Last Week Winner occupy equal halves above the showcase. Sun
 Wave 1 begins at 20 WPM; speeds rise by 2–3 WPM each wave to 70 WPM at Wave 20. Later waves retain the 70 WPM cap. The Top Achievement target is 20 completed waves. New runs earn 70% fewer points: 3 per correct character, 15 per completed word (both retain the combo multiplier), and 45 × wave for a wave-clear bonus. Existing saved scores are unchanged. Sunday practice still does not award competition points. The pause panel uses 30% of the typing area, with a 180px minimum (bounded by available space) to keep controls readable.
 
 Start-menu difficulty and action controls use 30% width with a 220px readable minimum bounded by available space. The hero logo/title remain unchanged.
+
+## No remembered login
+
+Student, Guest and Admin login identity/session tokens are kept only in page memory. No PIN is retained in the active profile. Refresh, a new tab or returning to the site requires login; server accounts and leaderboard history are unchanged. Legacy active-profile/name/ID/profile-list keys are removed from localStorage and sessionStorage on startup. Device identifiers and game settings are not login credentials and remain available. Login forms request autocomplete off and password-manager ignore hints, but the website cannot erase entries previously stored in an external browser password manager or force every browser to suppress its save prompt.

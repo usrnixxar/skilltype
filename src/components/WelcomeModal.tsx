@@ -46,6 +46,7 @@ export const WelcomeModal: React.FC<WelcomeModalProps> = ({ isOpen, activePlayer
         return;
       }
       onSavePlayerAndStart(await loginPlayer(kind, result.trimmedName, pin));
+      setName('');setEmail('');
     } catch (err) {
       if (err instanceof SessionConflictError) {
         const confirmed = window.confirm(
@@ -71,6 +72,7 @@ export const WelcomeModal: React.FC<WelcomeModalProps> = ({ isOpen, activePlayer
         setError(err instanceof Error ? err.message : 'Login failed. Please retry.');
       }
     } finally {
+      setPin('');setShowPin(false);
       setBusy(false);
     }
   };
@@ -91,13 +93,13 @@ export const WelcomeModal: React.FC<WelcomeModalProps> = ({ isOpen, activePlayer
         <button type="button" aria-pressed={kind === 'student'} className={`login-choice ${kind === 'student' ? 'selected' : ''}`} disabled={busy} onClick={() => { setKind('student'); setError(''); }}><GraduationCap size={24} /><strong>Student</strong><small>Name + 6-digit PIN</small></button>
         <button type="button" aria-pressed={kind === 'guest'} className={`login-choice ${kind === 'guest' ? 'selected' : ''}`} disabled={busy} onClick={() => { setKind('guest'); setPin(''); setError(''); }}><User size={24} /><strong>Guest</strong><small>Name + PIN</small></button>
       </div>
-      {kind && <form onSubmit={submit} className="welcome-form">
+      {kind && <form autoComplete="off" onSubmit={submit} className="welcome-form">
         <div className="form-group"><label htmlFor="player-name-input" className="form-label">Your full name</label>
-          <input id="player-name-input" className="text-input player-name-input" value={name} onChange={e => setName(e.target.value)} minLength={2} maxLength={25} required disabled={busy} autoComplete="name" placeholder="Enter your name" autoFocus />
+          <input id="player-name-input" className="text-input player-name-input" value={name} onChange={e => setName(e.target.value)} minLength={2} maxLength={25} required disabled={busy} autoComplete="off" placeholder="Enter your name" autoFocus />
         </div>
-        {kind==='guest'&&registerMode&&<div className="form-group"><label className="form-label" htmlFor="guest-email">Email address</label><input id="guest-email" className="text-input player-name-input" type="email" value={email} onChange={e=>setEmail(e.target.value)} required disabled={busy} autoComplete="email" placeholder="Enter your email" /></div>}
+        {kind==='guest'&&registerMode&&<div className="form-group"><label className="form-label" htmlFor="guest-email">Email address</label><input id="guest-email" className="text-input player-name-input" type="email" value={email} onChange={e=>setEmail(e.target.value)} required disabled={busy} autoComplete="off" placeholder="Enter your email" /></div>}
         <div className="form-group"><label htmlFor="student-pin" className="form-label">{kind==='student'?'Student PIN':registerMode?'Set PIN':'Guest PIN'}</label>
-          <div className="welcome-pin-field"><input id="student-pin" className="text-input player-name-input" type={showPin?"text":"password"} inputMode="numeric" pattern="[0-9]{6}" maxLength={6} value={pin} onChange={e => setPin(e.target.value.replace(/\D/g, ''))} required disabled={busy} placeholder={kind==='student'?'6-digit PIN from your teacher':registerMode?'Create a 6-digit PIN':'Your 6-digit PIN'} autoComplete={registerMode?'new-password':'off'} />
+          <div className="welcome-pin-field"><input id="student-pin" className="text-input player-name-input" type={showPin?"text":"password"} inputMode="numeric" pattern="[0-9]{6}" maxLength={6} value={pin} onChange={e => setPin(e.target.value.replace(/\D/g, ''))} required disabled={busy} placeholder={kind==='student'?'6-digit PIN from your teacher':registerMode?'Create a 6-digit PIN':'Your 6-digit PIN'} autoComplete="off" data-lpignore="true" data-1p-ignore="true" />
           <button type="button" className="welcome-pin-toggle" onClick={()=>setShowPin(v=>!v)} aria-label={showPin?'Hide PIN':'Show PIN'} aria-pressed={showPin} title={showPin?'Hide PIN':'Show PIN'}>{showPin?<EyeOff size={20}/>:<Eye size={20}/>}</button></div>
           <p className="form-hint">Use your registered name and six-digit PIN. Keep your PIN private.</p></div>
         <p className="form-hint">{kind === 'guest' ? 'Register once with full name, email and PIN. Then log in with the same name and PIN. Names remain masked on the leaderboard.' : 'Your full registered name is shown publicly and your scores stay linked to your student profile.'}</p>

@@ -10,6 +10,8 @@ import {
   loadAllLocalPlayers,
   getPlayerName,
   getPlayerId,
+  removeSavedLogin,
+  STORAGE_KEY_ACTIVE_PLAYER,
   STORAGE_KEY_PLAYER_NAME,
   STORAGE_KEY_PLAYER_ID,
 } from '../utils/playerProfile';
@@ -36,6 +38,8 @@ describe('Player Profile Management', () => {
     } as unknown as Storage;
 
     (globalThis as unknown as { localStorage: Storage }).localStorage = mockStorage;
+    globalThis.sessionStorage = mockStorage;
+    clearActivePlayer();
   });
 
   it('validates player names correctly', () => {
@@ -89,32 +93,31 @@ describe('Player Profile Management', () => {
     expect(maskPlayerName('N***r A****i')).toBe('N***r A****i');
   });
 
-  it('getPlayerName functions as the single reliable source of truth', () => {
-    // Empty state
+  it('uses only the current page identity or explicit fallback, not stored names', () => {
+    localStorage.setItem(STORAGE_KEY_PLAYER_NAME, 'Old User');
     expect(getPlayerName()).toBe('');
-
-    // Retrieved from localStorage
-    localStorage.setItem(STORAGE_KEY_PLAYER_NAME, 'Nisar');
+    expect(getPlayerName('  Rehan  ')).toBe('Rehan');
+    saveActivePlayer({id:'server-id',name:'Nisar',createdAt:0,pin:'123456',sessionToken:'a'.repeat(64)});
     expect(getPlayerName()).toBe('Nisar');
-
-    // Fallback if localStorage empty
-    localStorage.removeItem(STORAGE_KEY_PLAYER_NAME);
-    expect(getPlayerName('Rehan')).toBe('Rehan');
-
-    // Trims extra spaces
-    localStorage.setItem(STORAGE_KEY_PLAYER_NAME, '   Rahul Kumar   ');
-    expect(getPlayerName()).toBe('Rahul Kumar');
+    expect(getPlayerId()).toBe('server-id');
+    expect(loadActivePlayer()?.pin).toBeUndefined();
+    expect(Object.keys(mockStore)).toHaveLength(0);
+  });
+  it('keeps fallback IDs in memory only and forgets them on logout', () => {
+    const first = getPlayerId();
+    expect(getPlayerId()).toBe(first);
+    expect(localStorage.getItem(STORAGE_KEY_PLAYER_ID)).toBeNull();
+    clearActivePlayer();
+    expect(getPlayerId()).not.toBe(first);
+  });
+  it('purges old saved login credentials without removing settings', () => {
+    localStorage.setItem(STORAGE_KEY_ACTIVE_PLAYER, JSON.stringify({pin:'123456',sessionToken:'a'.repeat(64)}));
+    localStorage.setItem('skilltype_settings', 'preserve');
+    removeSavedLogin();
+    expect(localStorage.getItem(STORAGE_KEY_ACTIVE_PLAYER)).toBeNull();
+    expect(localStorage.getItem('skilltype_settings')).toBe('preserve');
   });
 
-  it('getPlayerId maintains stable UUID across sessions and never clears on reload', () => {
-    const id1 = getPlayerId();
-    expect(id1).toBeTruthy();
-
-    const id2 = getPlayerId();
-    expect(id2).toBe(id1);
-
-    expect(localStorage.getItem(STORAGE_KEY_PLAYER_ID)).toBe(id1);
-  });
 });
 
 describe('Weekly Leaderboard Ranking & Tie-Breaking Rules', () => {

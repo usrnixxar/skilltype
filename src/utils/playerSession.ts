@@ -86,7 +86,7 @@ export async function loginPlayer(
     throw error;
   }
 
-  return data.profile;
+  return loadActivePlayer()!;
 }
 
 export async function registerGuest(name:string,email:string,pin:string):Promise<void>{

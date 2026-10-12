@@ -99,9 +99,9 @@ export default function AdminPage() {
         if (!(e instanceof SessionConflictError) || !window.confirm('Your account is logged in on another device. Log out that device and continue here?')) throw e;
         next = await loginPlayer('student', name.trim(), pin, true);
       }
-      setProfile(next); setPin('');
+      setProfile(next); setName(''); setPin('');
     } catch (e) { setError(e instanceof Error ? e.message : 'Login failed.'); }
-    finally { setBusy(false); }
+    finally { setPin(''); setBusy(false); }
   };
   const logout = async () => {
     if (!profile || busy) return; setBusy(true); setError('');
@@ -136,9 +136,9 @@ export default function AdminPage() {
     {error && <div className="admin-alert" role="alert">{error}</div>}
     {notice && <div className="admin-notice" role="status">{notice}</div>}
     {!authorized ? <section className="admin-login admin-surface"><ShieldCheck size={36} className="admin-accent" /><h1>Admin login</h1><p>Manage players and gifts for SkillType.</p>
-      {checking ? <p role="status">Checking admin access…</p> : profile ? <><p>This account does not currently have verified Admin access. Log out to use your Admin account, or retry the connection.</p><button className="admin-button" onClick={() => window.location.reload()}>Retry</button></> : <form onSubmit={login}>
-        <label>Registered admin name<input value={name} onChange={e => setName(e.target.value)} minLength={2} maxLength={25} autoComplete="username" required disabled={busy} placeholder="Your existing registered name" /></label>
-        <label>Admin PIN<input type="password" inputMode="numeric" pattern="[0-9]{6}" maxLength={6} value={pin} onChange={e => setPin(e.target.value.replace(/\D/g,''))} autoComplete="current-password" required disabled={busy} placeholder="Your existing 6-digit PIN" /></label>
+      {checking ? <p role="status">Checking admin access…</p> : profile ? <><p>This account does not currently have verified Admin access. Log out to use your Admin account, or retry the connection.</p><button className="admin-button" onClick={() => window.location.reload()}>Retry</button></> : <form autoComplete="off" onSubmit={login}>
+        <label>Registered admin name<input value={name} onChange={e => setName(e.target.value)} minLength={2} maxLength={25} autoComplete="off" required disabled={busy} placeholder="Your existing registered name" /></label>
+        <label>Admin PIN<input type="password" inputMode="numeric" pattern="[0-9]{6}" maxLength={6} value={pin} onChange={e => setPin(e.target.value.replace(/\D/g,''))} autoComplete="off" data-lpignore="true" data-1p-ignore="true" required disabled={busy} placeholder="Your existing 6-digit PIN" /></label>
         <button type="submit" className="admin-primary" disabled={busy}>{busy ? 'Signing in…' : 'Sign in to Admin'}</button><p className="admin-muted">Only the existing Admin account can manage this website.</p>
       </form>}
     </section> : <>

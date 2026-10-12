@@ -58,7 +58,7 @@ export const App: React.FC = () => {
   const retryPayloadRef = useRef<SubmitRunPayload | null>(null);
   const activeSessionIdRef = useRef<string>(generateUuid());
 
-  // Player Profile State (Guest profile remembered in localStorage)
+  // Player profile for this page only; a reload requires login
   const [activePlayer, setActivePlayer] = useState<PlayerProfile | null>(loadActivePlayer);
   const [welcomeModalOpen, setWelcomeModalOpen] = useState(false);
 

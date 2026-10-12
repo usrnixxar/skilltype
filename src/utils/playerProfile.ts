@@ -1,13 +1,4 @@
-/**
- * Player Profile and Identity Management for SkillType
- *
- * Requirements:
- * - Mandatory player name (2–25 characters, trimmed).
- * - Persistent unique player_id stored in localStorage (`skilltype_player_id`).
- * - Same player_id reused across sessions so scores accumulate without duplicates.
- * - Player name can be updated at any time.
- * - Never defaults to "Guest", "Unknown", "undefined", "null", or "Player 1".
- */
+// Login identity is kept only in this page's memory, never browser storage.
 
 export interface PlayerProfile {
   id: string;
@@ -99,112 +90,39 @@ export function validatePlayerName(name: string): {
   };
 }
 
-/**
- * Single reliable getter for current player's name across the application.
- * Priority:
- * 1. skilltype_player_name from localStorage
- * 2. currentPlayerName / fallbackName passed in
- * 3. skilltype_active_player legacy name from localStorage
- * Standardized across project to playerName (and player_name in DB).
- */
+let activeProfile: PlayerProfile | null = null;
+let pagePlayerId: string | null = null;
+
+export function removeSavedLogin(): void {
+  for (const storageName of ['localStorage', 'sessionStorage'] as const) {
+    try {
+      const storage = globalThis[storageName];
+      for (const key of [STORAGE_KEY_ACTIVE_PLAYER, STORAGE_KEY_PLAYER_ID, STORAGE_KEY_PLAYER_NAME, STORAGE_KEY_ALL_PLAYERS]) storage?.removeItem(key);
+    } catch { /* Storage may be blocked; in-memory login still works. */ }
+  }
+}
+removeSavedLogin();
+// A browser Back restoration must not bring an earlier logged-in page back.
+if (typeof window !== 'undefined') window.addEventListener('pageshow', event => {
+  if (event.persisted) window.location.reload();
+});
+
 export function getPlayerName(fallbackName?: string): string {
-  try {
-    if (typeof localStorage !== 'undefined') {
-      const stored = localStorage.getItem(STORAGE_KEY_PLAYER_NAME);
-      if (stored && stored.trim().length >= 2) {
-        return stored.trim();
-      }
-    }
-  } catch {}
-
-  if (fallbackName && fallbackName.trim().length >= 2) {
-    return fallbackName.trim();
-  }
-
-  try {
-    if (typeof localStorage !== 'undefined') {
-      const legacy = localStorage.getItem(STORAGE_KEY_ACTIVE_PLAYER);
-      if (legacy) {
-        const parsed = JSON.parse(legacy);
-        if (parsed?.name && typeof parsed.name === 'string' && parsed.name.trim().length >= 2) {
-          return parsed.name.trim();
-        }
-      }
-    }
-  } catch {}
-
-  return '';
+  return activeProfile?.name || fallbackName?.trim() || '';
 }
-
-/**
- * Single reliable getter for current player's unique ID across the application.
- * Reuses existing skilltype_player_id UUID in localStorage.
- */
 export function getPlayerId(fallbackId?: string): string {
-  try {
-    if (typeof localStorage !== 'undefined') {
-      const stored = localStorage.getItem(STORAGE_KEY_PLAYER_ID);
-      if (stored && stored.trim()) {
-        return stored.trim();
-      }
-    }
-  } catch {}
-
-  if (fallbackId && fallbackId.trim()) {
-    return fallbackId.trim();
-  }
-
-  return getOrCreatePlayerId();
+  return activeProfile?.id || fallbackId?.trim() || getOrCreatePlayerId();
 }
-
-/**
- * Get the permanent player_id from localStorage, or generate a fresh UUID and store it.
- */
 export function getOrCreatePlayerId(): string {
-  try {
-    const existing = localStorage.getItem(STORAGE_KEY_PLAYER_ID);
-    if (existing && existing.trim()) {
-      return existing.trim();
-    }
-
-    // Check if legacy profile has an ID
-    const legacy = localStorage.getItem(STORAGE_KEY_ACTIVE_PLAYER);
-    if (legacy) {
-      try {
-        const parsed = JSON.parse(legacy);
-        if (parsed?.id && typeof parsed.id === 'string' && parsed.id.trim()) {
-          const id = parsed.id.trim();
-          localStorage.setItem(STORAGE_KEY_PLAYER_ID, id);
-          return id;
-        }
-      } catch {}
-    }
-
-    const newId = generateUuid();
-    localStorage.setItem(STORAGE_KEY_PLAYER_ID, newId);
-    return newId;
-  } catch {
-    return generateUuid();
-  }
+  return activeProfile?.id || (pagePlayerId ??= generateUuid());
 }
-
-/**
- * Load the active player profile from browser localStorage.
- * Returns null if no valid name has been entered yet.
- */
 export function loadActivePlayer(): PlayerProfile | null {
-  try {
-    const profile = JSON.parse(localStorage.getItem(STORAGE_KEY_ACTIVE_PLAYER) || 'null');
-    if (profile && typeof profile.id === 'string' && typeof profile.name === 'string' &&
-        ['student', 'guest'].includes(profile.kind) && /^[a-f0-9]{64}$/.test(profile.sessionToken)) return profile;
-  } catch {}
-  return null;
+  return activeProfile ? { ...activeProfile } : null;
 }
-
 export function clearActivePlayer(): void {
-  for (const key of [STORAGE_KEY_ACTIVE_PLAYER, STORAGE_KEY_PLAYER_ID, STORAGE_KEY_PLAYER_NAME, STORAGE_KEY_ALL_PLAYERS]) {
-    localStorage.removeItem(key);
-  }
+  activeProfile = null;
+  pagePlayerId = null;
+  removeSavedLogin();
 }
 
 export function maskPlayerName(name: string): string {
@@ -214,62 +132,19 @@ export function maskPlayerName(name: string): string {
   }).join(' ');
 }
 
-/**
- * Save active player profile to localStorage.
- * Stores under skilltype_player_id, skilltype_player_name, and skilltype_active_player.
- */
+/** Retain only the current page's authenticated identity; never retain the PIN. */
 export function saveActivePlayer(profile: PlayerProfile): void {
-  const current = loadActivePlayer();
-  if (current && current.sessionToken !== profile.sessionToken) throw new Error('Log out before changing profile.');
-  try {
-    const validation = validatePlayerName(profile.name);
-    const safeName = validation.trimmedName || profile.name.trim();
-
-    localStorage.setItem(STORAGE_KEY_PLAYER_ID, profile.id);
-    localStorage.setItem(STORAGE_KEY_PLAYER_NAME, safeName);
-    localStorage.setItem(
-      STORAGE_KEY_ACTIVE_PLAYER,
-      JSON.stringify({ ...profile, name: safeName })
-    );
-
-    localStorage.removeItem(STORAGE_KEY_ALL_PLAYERS);
-  } catch (err) {
-    console.warn('Failed to persist active player profile:', err);
-  }
-}
-
-/**
- * Load all player profiles known to this browser.
- */
-export function loadAllLocalPlayers(): PlayerProfile[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY_ALL_PLAYERS);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    if (Array.isArray(parsed)) {
-      return parsed.filter(
-        (p) => p && typeof p.id === 'string' && typeof p.name === 'string' && p.name.trim().length >= 2
-      );
-    }
-  } catch (err) {
-    console.warn('Failed to load local players list:', err);
-  }
-  return [];
-}
-
-/**
- * Create or update a player profile with a validated name.
- * Uses existing player_id if available so scores accumulate safely.
- */
-export function createPlayerProfile(name: string, explicitId?: string): PlayerProfile {
-  const { trimmedName } = validatePlayerName(name);
-  const id = explicitId || getOrCreatePlayerId();
-  const profile: PlayerProfile = {
-    id,
-    name: trimmedName,
-    createdAt: Date.now(),
+  if (activeProfile && activeProfile.sessionToken !== profile.sessionToken) throw new Error('Log out before changing profile.');
+  const validation = validatePlayerName(profile.name);
+  activeProfile = {
+    id: profile.id, name: validation.trimmedName || profile.name.trim(),
+    createdAt: profile.createdAt, kind: profile.kind, sessionToken: profile.sessionToken,
   };
-
+  removeSavedLogin();
+}
+export function loadAllLocalPlayers(): PlayerProfile[] { return []; }
+export function createPlayerProfile(name: string, explicitId?: string): PlayerProfile {
+  const profile: PlayerProfile = { id: explicitId || getOrCreatePlayerId(), name: validatePlayerName(name).trimmedName, createdAt: Date.now() };
   saveActivePlayer(profile);
-  return profile;
+  return loadActivePlayer()!;
 }
