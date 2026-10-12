@@ -46,6 +46,12 @@ Deno.serve(async (req: Request) => {
     }
     if(body.action==='delete-player')return reply({success:true,...await rpc('delete-player',{playerId:body.playerId,confirm:body.confirm})});
     if(body.action==='gifts')return reply({success:true,...await rpc('gifts')});
+    if(body.action==='funnel'){
+      const days=[7,30,90].includes(body.days)?body.days:30;
+      const {data,error}=await client.rpc('admin_funnel_metrics',{p_days:days});
+      if(error)return reply({error:'Funnel analytics unavailable'},503);
+      return reply({success:true,funnel:data});
+    }
     if(body.action==='analytics'){
       const visits:any[]=[];
       for(let page=0;page<100;page++){
