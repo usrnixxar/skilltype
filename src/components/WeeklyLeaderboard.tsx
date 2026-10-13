@@ -409,8 +409,7 @@ export const WeeklyLeaderboard: React.FC<WeeklyLeaderboardProps> = ({
                     </div>
 
                     <div className="col-status">{renderStatus(entry.playerId)}</div>
-                    <div className="col-status">{renderStatus(playerRankEntry.playerId)}</div>
-                  <div className="col-points">
+                    <div className="col-points">
                       <span className="stat-mono-score">
                         {isAdmin ? '∞' : displayedPoints.toLocaleString()}
                       </span>
@@ -435,6 +434,7 @@ export const WeeklyLeaderboard: React.FC<WeeklyLeaderboardProps> = ({
                     <span className="you-pill">YOU</span>
                     <small className="player-enrollment">{playerRankEntry.playerType === 'student' ? 'Student' : 'Not a student'}</small>
                   </div>
+                  <div className="col-status">{renderStatus(playerRankEntry.playerId)}</div>
                   <div className="col-points">
                     <span className="stat-mono-score">
                       {(activeTab === 'daily'
