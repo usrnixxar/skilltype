@@ -90,11 +90,32 @@ Deno.serve(async (req: Request) => {
       const token=Array.from(crypto.getRandomValues(new Uint8Array(32)),b=>b.toString(16).padStart(2,'0')).join('');
       const {error:insertErr}=await admin.from('player_sessions').insert({player_id:credential.player_id,token_hash:await hash(token),device_id:body.deviceId,last_seen_at:new Date().toISOString()});
       if(insertErr)return reply({error:'Login unavailable'},503);
+      await admin.from('player_profiles').update({last_active_at:new Date().toISOString()}).eq('id',credential.player_id);
       await admin.from('player_login_events').insert({player_id:credential.player_id});
       const {data:profile}=await admin.from('player_profiles').select('id,name,kind,created_at').eq('id',credential.player_id).single();
       return reply({success:true,profile:{id:credential.player_id,name:maskGuestName(profile?.name||name),kind:'guest',createdAt:Date.parse(profile?.created_at||new Date().toISOString()),sessionToken:token}});
     }
 
+    if(body.action==='leaderboard-presence'){
+      const ids=Array.isArray(body.playerIds)?body.playerIds.filter((id:unknown)=>typeof id==='string'&&/^[a-f0-9-]{36}$/.test(id)).slice(0,50):[];
+      if(!ids.length)return reply({success:true,players:[]});
+      const {data:verified}=await admin.from('leaderboard').select('player_id').in('player_id',ids).limit(100);
+      const allowed=(verified||[]).map((r:any)=>r.player_id);
+      if(!allowed.length)return reply({success:true,players:[]});
+      const [{data:profiles,error:pe},{data:sessions,error:se}]=await Promise.all([
+        admin.from('player_profiles').select('id,last_active_at').in('id',allowed),
+        admin.from('player_sessions').select('player_id,last_seen_at,expires_at').in('player_id',allowed)
+      ]);
+      if(pe||se)return reply({error:'Presence unavailable'},503);
+      const now=Date.now();
+      const players=(profiles||[]).map((p:any)=>{
+        const rows=(sessions||[]).filter((x:any)=>x.player_id===p.id);
+        const online=rows.some((x:any)=>Date.parse(x.expires_at)>now&&Date.parse(x.last_seen_at)>now-90000);
+        const recent=rows.reduce((acc:number,x:any)=>Math.max(acc,Date.parse(x.last_seen_at)||0),Date.parse(p.last_active_at)||0);
+        return {id:p.id,online,lastSeen:recent?new Date(recent).toISOString():null};
+      });
+      return reply({success:true,players});
+    }
     if (body.action === 'cheaters') {
       const { data, error } = await admin
         .from('player_security')
@@ -143,6 +164,8 @@ Deno.serve(async (req: Request) => {
       const tokenHash = await hash(body.sessionToken);
 
       if (body.action === 'logout') {
+        const {data:previous}=await admin.from('player_sessions').select('player_id').eq('token_hash',tokenHash).maybeSingle();
+        if(previous?.player_id)await admin.from('player_profiles').update({last_active_at:new Date().toISOString()}).eq('id',previous.player_id);
         const { error } = await admin
           .from('player_sessions')
           .delete()
@@ -160,6 +183,7 @@ Deno.serve(async (req: Request) => {
         .select('player_id')
         .maybeSingle();
 
+      if(data?.player_id)await admin.from('player_profiles').update({last_active_at:new Date().toISOString()}).eq('id',data.player_id);
       return error
         ? reply({ error: 'Session check unavailable' }, 503)
         : data
@@ -286,7 +310,7 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    if(data?.id) await admin.from('player_login_events').insert({player_id:data.id});
+    if(data?.id){await admin.from('player_profiles').update({last_active_at:new Date().toISOString()}).eq('id',data.id);await admin.from('player_login_events').insert({player_id:data.id});}
     return reply({ success: true, profile: { ...data, sessionToken: token } });
   } catch {
     return reply({ error: 'Unable to process login. Please retry.' }, 400);
