@@ -1,5 +1,6 @@
 import { TopAchievement } from './TopAchievement';
 import { SpinWheel } from './SpinWheel';
+import { getSupabaseClient } from '../utils/supabaseClient';
 import { GiftSlider } from './GiftSlider';
 import { useCompetition } from '../context/CompetitionContext';
 import React, { useEffect, useState, useCallback, useRef } from 'react';
@@ -49,6 +50,35 @@ export const WeeklyLeaderboard: React.FC<WeeklyLeaderboardProps> = ({
   const [resetCountdown, setResetCountdown] = useState<string>('');
   const [cheaters, setCheaters] = useState<CheaterEntry[]>([]);
 
+  const [publicPresence,setPublicPresence]=useState<Record<string,{online:boolean;lastSeen:string|null}>>({});
+  const [presenceClock,setPresenceClock]=useState(Date.now());
+  useEffect(()=>{const t=window.setInterval(()=>setPresenceClock(Date.now()),30000);return()=>window.clearInterval(t)},[]);
+  const visibleIds=(data?.entries||[]).map(p=>p.playerId).filter(Boolean).slice(0,50);
+  const visibleKey=visibleIds.join(',');
+  useEffect(()=>{
+    if(!visibleKey)return;
+    const client=getSupabaseClient();if(!client)return;
+    let stopped=false;
+    const update=async()=>{
+      try{
+        const {data:response,error}=await client.functions.invoke('player-session',{body:{action:'leaderboard-presence',playerIds:visibleKey.split(',')}});
+        if(error||!response?.success||stopped)return;
+        setPublicPresence(Object.fromEntries((response.players||[]).map((p:{id:string;online:boolean;lastSeen:string|null})=>[p.id,{online:p.online,lastSeen:p.lastSeen}])));
+      }catch{/* unknown presence displayed separately */}
+    };
+    void update();
+    const timer=window.setInterval(update,30000);
+    return()=>{stopped=true;window.clearInterval(timer)};
+  },[visibleKey]);
+  const renderStatus=(id:string)=>{
+    const state=publicPresence[id];
+    if(!state)return <span className="leaderboard-status unknown">—</span>;
+    if(state.online)return <span className="leaderboard-status online"><i/>Online</span>;
+    if(!state.lastSeen)return <span className="leaderboard-status offline"><i/>Offline</span>;
+    const mins=Math.max(0,Math.floor((presenceClock-Date.parse(state.lastSeen))/60000));
+    const age=mins<1?'just now':mins<60?`${mins}m ago`:mins<1440?`${Math.floor(mins/60)}h ${mins%60}m ago`:`${Math.floor(mins/1440)}d ago`;
+    return <span className="leaderboard-status offline" title={new Date(state.lastSeen).toLocaleString()}><i/>Offline · {age}</span>;
+  };
   const isAdminViewer = activePlayer?.id === ADMIN_PLAYER_ID;
   const viewerSessionToken = isAdminViewer ? activePlayer?.sessionToken : undefined;
   const [presence, setPresence] = useState<{ token: string; online: Set<string> } | null>(null);
@@ -321,6 +351,7 @@ export const WeeklyLeaderboard: React.FC<WeeklyLeaderboardProps> = ({
             <div className="leaderboard-table-header">
               <span className="col-rank">#</span>
               <span className="col-player">Player</span>
+              <span className="col-status">Status</span>
               <span className="col-points">Points</span>
               <span className="col-wpm">WPM</span>
             </div>
@@ -377,7 +408,9 @@ export const WeeklyLeaderboard: React.FC<WeeklyLeaderboardProps> = ({
                       <small className="player-enrollment">{isAdmin ? 'Admin' : (entry.playerType === 'student' ? 'Student' : 'Not a student')}</small>
                     </div>
 
-                    <div className="col-points">
+                    <div className="col-status">{renderStatus(entry.playerId)}</div>
+                    <div className="col-status">{renderStatus(playerRankEntry.playerId)}</div>
+                  <div className="col-points">
                       <span className="stat-mono-score">
                         {isAdmin ? '∞' : displayedPoints.toLocaleString()}
                       </span>
