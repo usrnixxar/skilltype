@@ -74,10 +74,11 @@ export const WeeklyLeaderboard: React.FC<WeeklyLeaderboardProps> = ({
     const state=publicPresence[id];
     if(!state)return <span className="leaderboard-status unknown">—</span>;
     if(state.online)return <span className="leaderboard-status online">Online</span>;
-    if(!state.lastSeen)return <span className="leaderboard-status offline">Offline</span>;
+    if(!state.lastSeen)return <span className="leaderboard-status unknown">—</span>;
     const mins=Math.max(0,Math.floor((presenceClock-Date.parse(state.lastSeen))/60000));
-    const age=mins<1?'just now':mins<60?`${mins}m ago`:mins<1440?`${Math.floor(mins/60)}h ago`:`${Math.floor(mins/1440)}d ago`;
-    return <span className="leaderboard-status offline" title={new Date(state.lastSeen).toLocaleString()}>Offline · {age}</span>;
+    const days=Math.floor(mins/1440);
+    const age=mins<1?'0m':mins<60?`${mins}m`:mins<1440?`${Math.floor(mins/60)}h`:days>=30?'30 days':days===1?'1 day':`${days} days`;
+    return <span className="leaderboard-status offline" title={new Date(state.lastSeen).toLocaleString()}>{age}</span>;
   };
   const isAdminViewer = activePlayer?.id === ADMIN_PLAYER_ID;
   const viewerSessionToken = isAdminViewer ? activePlayer?.sessionToken : undefined;
@@ -118,7 +119,7 @@ export const WeeklyLeaderboard: React.FC<WeeklyLeaderboardProps> = ({
       <span title="Flagged by anti-cheat" style={{ color: '#f87171', backgroundColor: 'rgba(239, 68, 68, 0.14)', borderRadius: 4, padding: '1px 4px' }}>
         <span role="img" aria-label="Cheater caution">⚠️</span>{' '}{name}
       </span>
-    ) : name}{renderPresence(playerId)}
+    ) : name}
   </>;
 
   const adminPreview = useRef<HTMLDialogElement>(null);
