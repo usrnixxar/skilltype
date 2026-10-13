@@ -73,11 +73,11 @@ export const WeeklyLeaderboard: React.FC<WeeklyLeaderboardProps> = ({
   const renderStatus=(id:string)=>{
     const state=publicPresence[id];
     if(!state)return <span className="leaderboard-status unknown">—</span>;
-    if(state.online)return <span className="leaderboard-status online"><i/>Online</span>;
-    if(!state.lastSeen)return <span className="leaderboard-status offline"><i/>Offline</span>;
+    if(state.online)return <span className="leaderboard-status online">Online</span>;
+    if(!state.lastSeen)return <span className="leaderboard-status offline">Offline</span>;
     const mins=Math.max(0,Math.floor((presenceClock-Date.parse(state.lastSeen))/60000));
-    const age=mins<1?'just now':mins<60?`${mins}m ago`:mins<1440?`${Math.floor(mins/60)}h ${mins%60}m ago`:`${Math.floor(mins/1440)}d ago`;
-    return <span className="leaderboard-status offline" title={new Date(state.lastSeen).toLocaleString()}><i/>Offline · {age}</span>;
+    const age=mins<1?'just now':mins<60?`${mins}m ago`:mins<1440?`${Math.floor(mins/60)}h ago`:`${Math.floor(mins/1440)}d ago`;
+    return <span className="leaderboard-status offline" title={new Date(state.lastSeen).toLocaleString()}>Offline · {age}</span>;
   };
   const isAdminViewer = activePlayer?.id === ADMIN_PLAYER_ID;
   const viewerSessionToken = isAdminViewer ? activePlayer?.sessionToken : undefined;
