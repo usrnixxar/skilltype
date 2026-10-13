@@ -3603,3 +3603,26 @@ body:has(.admin-image-modal[open]) { overflow: hidden; }
 .welcome-screen .welcome-pin-toggle { position:absolute; right:8px; top:50%; transform:translateY(-50%); width:38px; height:38px; display:flex; align-items:center; justify-content:center; border:0; border-radius:8px; background:transparent; color:#a8c8df; cursor:pointer; transition:color .18s ease,background .18s ease; }
 .welcome-screen .welcome-pin-toggle:hover { color:#00f0ff; background:#00f0ff18; }
 .welcome-screen .welcome-pin-toggle:focus-visible { outline:2px solid #00f0ff; outline-offset:2px; }
+
+/* Public leaderboard: status between Player and Points. */
+.weekly-leaderboard-panel .leaderboard-row,
+.weekly-leaderboard-panel .leaderboard-table-header {
+  grid-template-columns: 28px minmax(80px,1fr) minmax(85px,.85fr) minmax(50px,.5fr) 38px;
+  column-gap:5px;
+}
+.weekly-leaderboard-panel .col-status { min-width:0; display:flex; align-items:center; font-size:10px; line-height:1.25; }
+.weekly-leaderboard-panel .leaderboard-status { display:inline-flex; align-items:center; gap:4px; flex-wrap:wrap; overflow-wrap:anywhere; }
+.weekly-leaderboard-panel .leaderboard-status i { display:inline-block; flex:0 0 7px; width:7px; height:7px; border-radius:50%; }
+.weekly-leaderboard-panel .leaderboard-status.online { color:#4ade80; }
+.weekly-leaderboard-panel .leaderboard-status.online i { background:#22c55e; box-shadow:0 0 7px #22c55e66; }
+.weekly-leaderboard-panel .leaderboard-status.offline { color:#fca5a5; }
+.weekly-leaderboard-panel .leaderboard-status.offline i { background:#ef4444; }
+.weekly-leaderboard-panel .leaderboard-status.unknown { color:#94a3b8; }
+@media(max-width:440px) {
+ .weekly-leaderboard-panel .leaderboard-row,
+ .weekly-leaderboard-panel .leaderboard-table-header {
+   grid-template-columns:24px minmax(66px,1fr) minmax(68px,.88fr) minmax(38px,.46fr) 30px;
+   column-gap:3px; padding-left:3px; padding-right:3px;
+ }
+ .weekly-leaderboard-panel .col-status { font-size:9px; }
+}
