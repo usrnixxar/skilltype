@@ -6,10 +6,11 @@ interface WelcomeModalProps {
   isOpen: boolean;
   activePlayer: PlayerProfile | null;
   onSavePlayerAndStart: (profile: PlayerProfile) => void;
+  onPlayNow: () => void;
   onClose?: () => void;
   canClose?: boolean;
 }
-export const WelcomeModal: React.FC<WelcomeModalProps> = ({ isOpen, activePlayer, onSavePlayerAndStart }) => {
+export const WelcomeModal: React.FC<WelcomeModalProps> = ({ isOpen, activePlayer, onSavePlayerAndStart, onPlayNow }) => {
   const dialogRef = useRef<HTMLDivElement>(null);
   const visible = isOpen && !activePlayer;
   useEffect(() => {
@@ -110,6 +111,8 @@ export const WelcomeModal: React.FC<WelcomeModalProps> = ({ isOpen, activePlayer
           <button type="button" className="btn btn-primary btn-welcome-start" disabled={busy} onClick={()=>{setRegisterMode(true);setError('');setNotice('');setPin('');}}>Register</button>
         </div> : <button type="submit" className="btn btn-primary btn-welcome-start" disabled={busy}><Play size={18}/><span>{busy?'Checking…':kind==='guest'?'Register':'Log in & Play'}</span></button>}
       </form>}
+      <button type="button" className="btn btn-primary btn-welcome-start" style={{width:'100%',marginTop:16,justifyContent:'center'}} disabled={busy} onClick={onPlayNow}><Play size={18}/><span>Play Now — No Login Required</span></button>
+      <p className="form-hint" style={{textAlign:'center'}}>Instant practice only. Scores are not added to the leaderboard.</p>
       <div className="welcome-admin-link"><a href="/admin">Admin login</a></div>
     </div>
   </div>;
