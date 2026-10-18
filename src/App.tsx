@@ -727,6 +727,7 @@ export const App: React.FC = () => {
         }}
         onClose={() => setWelcomeModalOpen(false)}
         onSavePlayerAndStart={(profile) => {
+          setIsQuickPlaying(false);
           setActivePlayer(profile);
           saveActivePlayer(profile);
           setWelcomeModalOpen(false);
