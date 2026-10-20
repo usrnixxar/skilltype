@@ -3662,7 +3662,7 @@ body:has(.admin-image-modal[open]) { overflow: hidden; }
 }
 
 /* SkillType login landing page – self-contained to avoid changing gameplay UI. */
-.welcome-screen.skilltype-landing {display:block; padding:0; overflow-y:auto; overflow-x:hidden; background:radial-gradient(ellipse at 42% 38%,#0c2a56 0%,#06152e 45%,#020916 100%); color:#eff8ff; }
+.welcome-screen.skilltype-landing {display:block; padding:0; overflow-y:auto; overflow-x:hidden; background:linear-gradient(90deg,rgba(2,8,23,.40),rgba(2,8,23,.27)),url('../Neon Cyber Stage with Blue and Gold Accents.png') center center / cover no-repeat fixed; color:#eff8ff; }
 .skilltype-landing .landing-stars {position:fixed;inset:0;pointer-events:none;background-image:radial-gradient(1px 1px at 12% 19%,#9ddaff 98%,transparent),radial-gradient(1px 1px at 64% 32%,#d5f7ff 98%,transparent),radial-gradient(2px 2px at 84% 15%,#5abfff 98%,transparent),radial-gradient(1px 1px at 33% 68%,#95c9ef 98%,transparent),radial-gradient(1px 1px at 73% 79%,#ffffff 98%,transparent);background-size:287px 239px;opacity:.45}
 .skilltype-landing .landing-shell {position:relative;max-width:1660px;min-height:100dvh;margin:0 auto;display:flex;flex-direction:column;isolation:isolate}
 .skilltype-landing .landing-navbar {display:flex;align-items:center;justify-content:space-between;gap:24px;padding:17px clamp(20px,4vw,64px);border-bottom:1px solid #1884c448;background:#020d2080}
