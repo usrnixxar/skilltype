@@ -11,7 +11,6 @@ import {
 import { PlayerProfile } from '../utils/playerProfile';
 import { subscribeToLeaderboardRealtime } from '../utils/supabaseClient';
 import { getTimeUntilSaturdayReset } from '../utils/dateUtils';
-import { fetchCheaters, CheaterEntry } from '../utils/playerSession';
 import {
   Trophy,
   RotateCw,
@@ -48,7 +47,6 @@ export const WeeklyLeaderboard: React.FC<WeeklyLeaderboardProps> = ({
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [resetCountdown, setResetCountdown] = useState<string>('');
-  const [cheaters, setCheaters] = useState<CheaterEntry[]>([]);
 
   const [publicPresence,setPublicPresence]=useState<Record<string,{online:boolean;lastSeen:string|null}>>({});
   const [presenceClock,setPresenceClock]=useState(Date.now());
@@ -80,15 +78,6 @@ export const WeeklyLeaderboard: React.FC<WeeklyLeaderboardProps> = ({
     const age=mins<1?'0m':mins<60?`${mins}m`:mins<1440?`${Math.floor(mins/60)}h`:days>=30?'30 days':days===1?'1 day':`${days} days`;
     return <span className="leaderboard-status offline" title={new Date(state.lastSeen).toLocaleString()}>{age}</span>;
   };
-  const flaggedNames = new Set(cheaters.map((entry) => entry.name.trim()));
-  const renderPlayerName = (name: string) => <>
-    {flaggedNames.has(name.trim()) ? (
-      <span title="Flagged by anti-cheat" style={{ color: '#f87171', backgroundColor: 'rgba(239, 68, 68, 0.14)', borderRadius: 4, padding: '1px 4px' }}>
-        <span role="img" aria-label="Cheater caution">⚠️</span>{' '}{name}
-      </span>
-    ) : name}
-  </>;
-
   const adminPreview = useRef<HTMLDialogElement>(null);
 
   // Update Saturday reset countdown timer every minute
@@ -124,15 +113,6 @@ export const WeeklyLeaderboard: React.FC<WeeklyLeaderboardProps> = ({
     },
     [activePlayer?.id, activeTab, data]
   );
-
-  useEffect(() => {
-    const loadCheaters = () => {
-      fetchCheaters().then(setCheaters).catch(() => {});
-    };
-    loadCheaters();
-    const timer = setInterval(loadCheaters, 60000);
-    return () => clearInterval(timer);
-  }, [lastSavedRunId]);
 
   // Initial load and reload when tab, active player, or saved run changes
   useEffect(() => {
@@ -370,7 +350,7 @@ export const WeeklyLeaderboard: React.FC<WeeklyLeaderboardProps> = ({
                             draggable={false}
                           />
                         )}
-                        {isAdmin ? 'Admin' : renderPlayerName(entry.player_name || entry.playerName || entry.name || 'Unnamed Player')}
+                        {isAdmin ? 'Admin' : (entry.player_name || entry.playerName || entry.name || 'Unnamed Player')}
                       </span>
                       {isCurrentPlayer && <span className="you-pill">YOU</span>}
                       <small className="player-enrollment">{isAdmin ? 'Admin' : (entry.playerType === 'student' ? 'Student' : 'Not a student')}</small>
@@ -397,7 +377,7 @@ export const WeeklyLeaderboard: React.FC<WeeklyLeaderboardProps> = ({
                   </div>
                   <div className="col-player" title={playerRankEntry.player_name || playerRankEntry.playerName}>
                     <span className="player-name-text">
-                      {renderPlayerName(playerRankEntry.player_name || playerRankEntry.playerName || playerRankEntry.name || 'Unnamed Player')}
+                      {(playerRankEntry.player_name || playerRankEntry.playerName || playerRankEntry.name || 'Unnamed Player')}
                     </span>
                     <span className="you-pill">YOU</span>
                     <small className="player-enrollment">{playerRankEntry.playerType === 'student' ? 'Student' : 'Not a student'}</small>
