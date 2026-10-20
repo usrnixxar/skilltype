@@ -3804,3 +3804,36 @@ body:has(.admin-image-modal[open]) { overflow: hidden; }
 
 /* Transparent Skillence Academy logo: no white square behind the PNG. */
 .skilltype-landing .landing-brand-image {background:transparent;border-radius:0;object-fit:contain}
+
+/* Skillence Academy brand palette for the login homepage navbar. */
+.skilltype-landing .landing-navbar {
+  background:#ffffff;
+  border-bottom:2px solid #f58220;
+  box-shadow:0 3px 16px rgba(2,34,89,.13);
+}
+.skilltype-landing .landing-logo .landing-powered-name {
+  color:#ef7418;
+  text-shadow:none;
+}
+.skilltype-landing .landing-navbar-caption {
+  color:#073e80;
+  font-weight:800;
+}
+.skilltype-landing .landing-nav-pill {
+  background:#fff7ef;
+  color:#064486;
+  border-color:#ef7418;
+}
+.skilltype-landing .landing-nav-pill span {color:#ef7418}
+.skilltype-landing .landing-sound-toggle {
+  background:#f0f6ff;
+  color:#074589;
+  border-color:#0a4e93;
+}
+.skilltype-landing .landing-sound-toggle:hover,
+.skilltype-landing .landing-sound-toggle:focus-visible {
+  background:#fff0dd;
+  color:#e46b11;
+  border-color:#ef7418;
+  box-shadow:0 0 12px rgba(239,116,24,.2);
+}
