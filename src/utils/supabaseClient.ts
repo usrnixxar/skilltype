@@ -19,7 +19,10 @@ export function getSupabaseClient(): SupabaseClient | null {
   if (!supabaseInstance) {
     supabaseInstance = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
       auth: {
-        persistSession: false,
+        persistSession: true,
+        storage: typeof window !== 'undefined' ? window.sessionStorage : undefined,
+        storageKey: 'skilltype_google_oauth_temp',
+        detectSessionInUrl: true,
         autoRefreshToken: false,
       },
       realtime: {
