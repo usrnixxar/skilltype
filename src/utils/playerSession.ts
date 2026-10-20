@@ -46,6 +46,32 @@ async function sessionRequest(body: Record<string, unknown>) {
   return data;
 }
 
+export async function signInWithGoogle(): Promise<void> {
+  const client = getSupabaseClient();
+  if (!client) throw new Error('Google login is not configured.');
+  const { error } = await client.auth.signInWithOAuth({
+    provider: 'google',
+    options: { redirectTo: window.location.origin + window.location.pathname },
+  });
+  if (error) throw error;
+}
+
+export async function completeGoogleLogin(forceLogoutOther = false): Promise<PlayerProfile | null> {
+  const client = getSupabaseClient();
+  if (!client) return null;
+  const { data: { session }, error } = await client.auth.getSession();
+  if (error) throw error;
+  if (!session) return null;
+  try {
+    const data = await sessionRequest({action:'google-login', accessToken:session.access_token, deviceId:getOrCreateDeviceId(),forceLogoutOther});
+    saveActivePlayer(data.profile);
+    return loadActivePlayer()!;
+  } finally {
+    // Game uses its own short-lived page-local profile; clear OAuth credentials.
+    await client.auth.signOut({ scope: 'local' }).catch(() => {});
+  }
+}
+
 export interface CheaterEntry {
   name: string;
   distinctIpCount: number;
