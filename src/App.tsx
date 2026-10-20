@@ -707,6 +707,13 @@ export const App: React.FC = () => {
       {logoutError && <div className="session-error" role="alert">{logoutError}</div>}
       {/* Name Entry Welcome & Profile Switching Screen */}
       <WelcomeModal
+        isMuted={settings.isMuted}
+        onToggleMute={() => {
+          const next = !settings.isMuted;
+          soundEngine.setMuted(next);
+          handleUpdateSettings({ isMuted: next });
+          if (!next) soundEngine.startMusic();
+        }}
         isOpen={welcomeModalOpen || (!activePlayer)}
         activePlayer={activePlayer}
         canClose={activePlayer !== null}
