@@ -3717,3 +3717,75 @@ body:has(.admin-image-modal[open]) { overflow: hidden; }
 @media(max-width:980px) {.skilltype-landing .landing-navbar-caption{display:none}.skilltype-landing .landing-main{grid-template-columns:1fr;gap:24px;align-items:start}.skilltype-landing .landing-hero{padding-bottom:0}.skilltype-landing .landing-illustration{display:none}.skilltype-landing .landing-heading{margin-top:16px}.skilltype-landing .landing-login-area{max-width:680px;width:100%;margin:0 auto}.skilltype-landing .landing-description{margin:12px 0 20px}}
 @media(max-width:560px) {.skilltype-landing .landing-navbar{padding:14px 16px}.skilltype-landing .landing-nav-pill{font-size:0;padding:8px 10px;gap:0}.skilltype-landing .landing-nav-pill svg{width:24px;height:24px}.skilltype-landing .landing-nav-pill span{display:none}.skilltype-landing .landing-main{padding:24px 14px;gap:24px}.skilltype-landing .landing-heading{font-size:clamp(45px,11vw,65px);letter-spacing:-3px}.skilltype-landing .landing-tagline{font-size:20px}.skilltype-landing .landing-benefits{gap:6px}.skilltype-landing .landing-benefit{display:flex;flex-direction:column;align-items:flex-start;padding:10px 7px}.skilltype-landing .landing-benefit svg{width:20px;height:20px}.skilltype-landing .landing-benefit strong{font-size:10px}.skilltype-landing .landing-benefit small{font-size:9px}.skilltype-landing .landing-login-panel{padding:18px 15px}.skilltype-landing .login-choice{gap:6px;min-height:54px}.skilltype-landing .login-choice svg{width:18px}.skilltype-landing .landing-footer{font-size:9px;padding:13px 15px}.skilltype-landing .landing-preview{padding:14px}}
 @media(prefers-reduced-motion:reduce){.skilltype-landing *, .skilltype-landing *::before,.skilltype-landing *::after{animation:none!important;transition:none!important}}
+
+/* Responsive, viewport-contained login homepage: no visible page scrollbars. */
+.welcome-screen.skilltype-landing {
+  height:100dvh;
+  max-height:100dvh;
+  overflow:hidden;
+  background-attachment:scroll;
+}
+.skilltype-landing .landing-shell {height:100%;min-height:0;overflow:hidden}
+.skilltype-landing .landing-navbar {flex:0 0 auto;padding-top:clamp(9px,1.2vh,17px);padding-bottom:clamp(9px,1.2vh,17px)}
+.skilltype-landing .landing-main {
+  min-height:0;
+  overflow:hidden;
+  padding-top:clamp(10px,2vh,28px);
+  padding-bottom:clamp(8px,1.5vh,20px);
+}
+.skilltype-landing .landing-hero {min-height:0;padding-bottom:clamp(0px,7vh,65px)}
+.skilltype-landing .landing-heading {font-size:clamp(46px,5.5vw,85px);margin-top:clamp(10px,2vh,22px)}
+.skilltype-landing .landing-description {margin:clamp(8px,1.5vh,16px) 0}
+.skilltype-landing .landing-login-area {min-height:0;gap:clamp(7px,1.3vh,14px)}
+.skilltype-landing .landing-login-panel {padding:clamp(14px,2vh,29px)}
+.skilltype-landing .landing-panel-head {margin-bottom:clamp(8px,1.5vh,17px)}
+.skilltype-landing .login-choices {margin-bottom:clamp(10px,1.8vh,20px)}
+.skilltype-landing .welcome-form {gap:clamp(8px,1.6vh,14px)}
+.skilltype-landing .player-name-input {height:clamp(42px,5.8vh,52px)}
+.skilltype-landing .btn-welcome-start {min-height:clamp(46px,6.7vh,62px)}
+.skilltype-landing .landing-secure {margin-top:clamp(8px,1.5vh,17px)}
+.skilltype-landing .landing-preview {padding:clamp(10px,1.5vh,17px) 17px}
+.skilltype-landing .landing-preview-features {margin:clamp(6px,1vh,12px) 0}
+.skilltype-landing .landing-footer {flex:0 0 auto;padding-top:8px;padding-bottom:8px}
+@media(max-height:760px) and (min-width:981px) {
+  .skilltype-landing .landing-illustration {display:none}
+  .skilltype-landing .landing-hero {padding-bottom:0}
+  .skilltype-landing .landing-heading {font-size:clamp(44px,5vw,70px)}
+  .skilltype-landing .landing-preview {display:none}
+  .skilltype-landing .landing-benefit {padding:10px 8px}
+}
+@media(max-width:980px) {
+  .skilltype-landing .landing-main {
+    display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;
+    gap:clamp(8px,1.7vh,16px);overflow-y:auto;overflow-x:hidden;
+    scrollbar-width:none;-ms-overflow-style:none;
+    overscroll-behavior:contain;
+  }
+  .skilltype-landing .landing-main::-webkit-scrollbar {display:none}
+  .skilltype-landing .landing-hero {align-self:auto;flex:0 0 auto;padding-bottom:0}
+  .skilltype-landing .landing-login-area {flex:0 0 auto}
+  .skilltype-landing .landing-heading {font-size:clamp(39px,7vw,65px);margin:8px 0}
+  .skilltype-landing .landing-description {font-size:13px;line-height:1.4;margin:6px 0}
+  .skilltype-landing .landing-benefits {display:none}
+  .skilltype-landing .landing-preview {display:none}
+  .skilltype-landing .landing-footer {display:none}
+}
+@media(max-width:560px) {
+  .skilltype-landing .landing-main {padding:clamp(9px,1.5vh,16px) 12px;gap:clamp(8px,1.5vh,14px)}
+  .skilltype-landing .landing-eyebrow {letter-spacing:1px;font-size:9px;padding:4px 8px}
+  .skilltype-landing .landing-heading {font-size:clamp(36px,10vw,51px);letter-spacing:-2px}
+  .skilltype-landing .landing-heading-crown {width:35px;height:35px}
+  .skilltype-landing .landing-tagline {font-size:clamp(14px,4vw,19px)}
+  .skilltype-landing .landing-description {display:none}
+  .skilltype-landing .landing-login-panel {padding:clamp(12px,1.8vh,17px)}
+  .skilltype-landing .landing-panel-head {margin-bottom:10px}
+  .skilltype-landing .login-choices {margin-bottom:11px}
+  .skilltype-landing .login-choice {min-height:43px;padding:7px 5px}
+  .skilltype-landing .landing-secure {font-size:10px;margin-top:9px}
+  .skilltype-landing .btn-welcome-start {font-size:16px;min-height:47px}
+}
+@media(max-height:600px) and (min-width:981px) {
+  .skilltype-landing .landing-benefits,.skilltype-landing .landing-description {display:none}
+  .skilltype-landing .landing-login-area {max-height:100%;overflow-y:auto;scrollbar-width:none}
+  .skilltype-landing .landing-login-area::-webkit-scrollbar {display:none}
+}
