@@ -81,7 +81,6 @@ export const WeeklyLeaderboard: React.FC<WeeklyLeaderboardProps> = ({
     return <span className="leaderboard-status offline" title={new Date(state.lastSeen).toLocaleString()}>{age}</span>;
   };
   const flaggedNames = new Set(cheaters.map((entry) => entry.name.trim()));
-  const isAdminViewer = activePlayer?.id === ADMIN_PLAYER_ID;
   const renderPlayerName = (name: string) => <>
     {flaggedNames.has(name.trim()) ? (
       <span title="Flagged by anti-cheat" style={{ color: '#f87171', backgroundColor: 'rgba(239, 68, 68, 0.14)', borderRadius: 4, padding: '1px 4px' }}>
@@ -423,7 +422,6 @@ export const WeeklyLeaderboard: React.FC<WeeklyLeaderboardProps> = ({
         )}
       </div>
 
-      {isAdminViewer && <a className="admin-console-link" href="/admin">Open Admin Panel</a>}
 
       {/* Footer Section: Highlight Current Player or Prompt to Play */}
       <div className="leaderboard-footer-section">
