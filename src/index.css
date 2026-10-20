@@ -3801,3 +3801,6 @@ body:has(.admin-image-modal[open]) { overflow: hidden; }
 .skilltype-landing .landing-brand-image {display:block;width:clamp(44px,5vw,62px);height:clamp(44px,5vw,62px);object-fit:contain;border-radius:10px;background:#fff;flex-shrink:0}
 .skilltype-landing .landing-powered-name {font-style:italic;letter-spacing:-.6px;color:#27c7ff;font-size:clamp(20px,2.2vw,29px)}
 @media(max-width:560px){.skilltype-landing .landing-brand-image{width:39px;height:39px}.skilltype-landing .landing-powered-name{font-size:19px}}
+
+/* Transparent Skillence Academy logo: no white square behind the PNG. */
+.skilltype-landing .landing-brand-image {background:transparent;border-radius:0;object-fit:contain}
