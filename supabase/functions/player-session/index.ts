@@ -191,6 +191,13 @@ Deno.serve(async (req: Request) => {
           : reply({ error: 'Please log in again' }, 401);
     }
 
+    // Name-only guests always receive a fresh identity; never look up an existing name.
+    if (body.action === 'guest-name-login') {
+      body.action = 'login';
+      body.kind = 'guest';
+      body.pin = null;
+    }
+
     if (body.action !== 'login' || !['student', 'guest'].includes(body.kind)) {
       return reply({ error: 'Choose Student or Guest' }, 400);
     }

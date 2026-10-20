@@ -67,7 +67,7 @@ export async function loginPlayer(
   if (loadActivePlayer()) throw new Error('Log out before changing profile.');
 
   const data = await sessionRequest({
-    action: 'login',
+    action: kind === 'guest' ? 'guest-name-login' : 'login',
     kind,
     name,
     pin,

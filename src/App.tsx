@@ -61,7 +61,6 @@ export const App: React.FC = () => {
   // Player profile for this page only; a reload requires login
   const [activePlayer, setActivePlayer] = useState<PlayerProfile | null>(loadActivePlayer);
   const [welcomeModalOpen, setWelcomeModalOpen] = useState(false);
-  const [isQuickPlaying, setIsQuickPlaying] = useState(false);
 
   const [logoutError, setLogoutError] = useState('');
   const [loggingOut, setLoggingOut] = useState(false);
@@ -411,7 +410,7 @@ export const App: React.FC = () => {
         modalOpen !== 'none' ||
         appState !== 'gameplay' ||
         welcomeModalOpen ||
-        (!activePlayer && !isQuickPlaying)
+        (!activePlayer)
       ) {
         return;
       }
@@ -429,12 +428,12 @@ export const App: React.FC = () => {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [modalOpen, appState, welcomeModalOpen, activePlayer, isQuickPlaying, isMobile, isKeyboardCheckOpen, withKeyboard]);
+  }, [modalOpen, appState, welcomeModalOpen, activePlayer, isMobile, isKeyboardCheckOpen, withKeyboard]);
 
   // --- Actions ---
 
   const startArcadeGame = () => withKeyboard(() => {
-    if (!activePlayer && !isQuickPlaying) {
+    if (!activePlayer) {
       setWelcomeModalOpen(true);
       return;
     }
@@ -525,7 +524,6 @@ export const App: React.FC = () => {
 
   const handleReturnToMenu = () => {
     setModalOpen('none');
-    if (isQuickPlaying) setIsQuickPlaying(false);
     setAppState('menu');
     if (engineRef.current) {
       engineRef.current.reset();
@@ -549,9 +547,9 @@ export const App: React.FC = () => {
   const currentBest = records.personalBests[pbKey] || null;
 
   return (
-    <div className={`skilltype-app${!activePlayer && !isQuickPlaying ? ' login-required' : ''}`} id="skilltype-root">
+    <div className={`skilltype-app${!activePlayer ? ' login-required' : ''}`} id="skilltype-root">
       {/* 3-Column Desktop Layout */}
-      <div className="skilltype-layout-container" aria-hidden={!activePlayer && !isQuickPlaying || undefined}>
+      <div className="skilltype-layout-container" aria-hidden={!activePlayer || undefined}>
         {/* LEFT COLUMN: Live Player Statistics */}
         <aside className="skilltype-side-column skilltype-left-column">
           <LiveStatsPanel
@@ -709,25 +707,11 @@ export const App: React.FC = () => {
       {logoutError && <div className="session-error" role="alert">{logoutError}</div>}
       {/* Name Entry Welcome & Profile Switching Screen */}
       <WelcomeModal
-        isOpen={welcomeModalOpen || (!activePlayer && !isQuickPlaying)}
+        isOpen={welcomeModalOpen || (!activePlayer)}
         activePlayer={activePlayer}
-        canClose={activePlayer !== null || isQuickPlaying}
-        onPlayNow={() => {
-          setIsQuickPlaying(true);
-          setWelcomeModalOpen(false);
-          activeSessionIdRef.current = generateUuid();
-          setSaveError(null);
-          setCurrentMode('arcade');
-          setModalOpen('none');
-          withKeyboard(() => {
-            engineRef.current?.updateConfig({mode: 'arcade', difficulty: settings.difficulty, category: 'common', practiceTimedMinutes: 0, practiceRelaxed: false, reducedMotion: settings.reducedMotion});
-            setAppState('gameplay');
-            engineRef.current?.startGame();
-          });
-        }}
+        canClose={activePlayer !== null}
         onClose={() => setWelcomeModalOpen(false)}
         onSavePlayerAndStart={(profile) => {
-          setIsQuickPlaying(false);
           setActivePlayer(profile);
           saveActivePlayer(profile);
           setWelcomeModalOpen(false);

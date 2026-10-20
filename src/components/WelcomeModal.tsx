@@ -1,16 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { PlayerProfile, validatePlayerName } from '../utils/playerProfile';
-import { loginPlayer, registerGuest, SessionConflictError } from '../utils/playerSession';
+import { loginPlayer, SessionConflictError } from '../utils/playerSession';
 import { GraduationCap, User, Play, Eye, EyeOff } from 'lucide-react';
 interface WelcomeModalProps {
   isOpen: boolean;
   activePlayer: PlayerProfile | null;
   onSavePlayerAndStart: (profile: PlayerProfile) => void;
-  onPlayNow: () => void;
   onClose?: () => void;
   canClose?: boolean;
 }
-export const WelcomeModal: React.FC<WelcomeModalProps> = ({ isOpen, activePlayer, onSavePlayerAndStart, onPlayNow }) => {
+export const WelcomeModal: React.FC<WelcomeModalProps> = ({ isOpen, activePlayer, onSavePlayerAndStart }) => {
   const dialogRef = useRef<HTMLDivElement>(null);
   const visible = isOpen && !activePlayer;
   useEffect(() => {
@@ -26,12 +25,9 @@ export const WelcomeModal: React.FC<WelcomeModalProps> = ({ isOpen, activePlayer
   const [name, setName] = useState('');
   const [pin, setPin] = useState('');
   const [showPin,setShowPin]=useState(false);
-  const [email,setEmail]=useState('');
-  const [registerMode,setRegisterMode]=useState(false);
   const [error, setError] = useState('');
-  const [notice,setNotice]=useState('');
   const [busy, setBusy] = useState(false);
-  useEffect(() => { if (isOpen) { setKind(null); setName(''); setPin('');setShowPin(false);setEmail('');setRegisterMode(false); setError('');setNotice(''); } }, [isOpen]);
+  useEffect(() => { if (isOpen) { setKind(null); setName(''); setPin('');setShowPin(false); setError(''); } }, [isOpen]);
   if (!isOpen || activePlayer) return null;
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -39,15 +35,10 @@ export const WelcomeModal: React.FC<WelcomeModalProps> = ({ isOpen, activePlayer
     const result = validatePlayerName(name);
     if (!result.valid) { setError(result.error || 'Enter your name'); return; }
     if (kind === 'student' && !/^\d{6}$/.test(pin)) { setError('Enter your 6-digit student PIN'); return; }
-    setBusy(true); setError('');setNotice('');
+    setBusy(true); setError('');
     try {
-      if(kind==='guest'&&registerMode){
-        await registerGuest(result.trimmedName,email,pin);
-        setRegisterMode(false);setNotice('Registered successfully. Now log in with your name and PIN.');
-        return;
-      }
       onSavePlayerAndStart(await loginPlayer(kind, result.trimmedName, pin));
-      setName('');setEmail('');
+      setName('');
     } catch (err) {
       if (err instanceof SessionConflictError) {
         const confirmed = window.confirm(
@@ -91,29 +82,21 @@ export const WelcomeModal: React.FC<WelcomeModalProps> = ({ isOpen, activePlayer
         <p className="welcome-subtitle">One profile at a time. Log out to change player.</p>
       </div>
       <div className="login-choices" aria-label="Login type">
-        <button type="button" aria-pressed={kind === 'student'} className={`login-choice ${kind === 'student' ? 'selected' : ''}`} disabled={busy} onClick={() => { setKind('student'); setError(''); }}><GraduationCap size={24} /><strong>Student</strong><small>Name + 6-digit PIN</small></button>
-        <button type="button" aria-pressed={kind === 'guest'} className={`login-choice ${kind === 'guest' ? 'selected' : ''}`} disabled={busy} onClick={() => { setKind('guest'); setPin(''); setError(''); }}><User size={24} /><strong>Guest</strong><small>Name + PIN</small></button>
+        <button type="button" aria-pressed={kind === 'student'} className={`login-choice ${kind === 'student' ? 'selected' : ''}`} disabled={busy} onClick={() => { setKind('student'); setError(''); }}><GraduationCap size={24} /><strong>Student Login</strong><small>Name + 6-digit PIN</small></button>
+        <button type="button" aria-pressed={kind === 'guest'} className={`login-choice ${kind === 'guest' ? 'selected' : ''}`} disabled={busy} onClick={() => { setKind('guest'); setPin(''); setError(''); }}><User size={24} /><strong>Guest</strong><small>Enter your name to play</small></button>
       </div>
       {kind && <form autoComplete="off" onSubmit={submit} className="welcome-form">
         <div className="form-group"><label htmlFor="player-name-input" className="form-label">Your full name</label>
           <input id="player-name-input" className="text-input player-name-input" value={name} onChange={e => setName(e.target.value)} minLength={2} maxLength={25} required disabled={busy} autoComplete="off" placeholder="Enter your name" autoFocus />
         </div>
-        {kind==='guest'&&registerMode&&<div className="form-group"><label className="form-label" htmlFor="guest-email">Email address</label><input id="guest-email" className="text-input player-name-input" type="email" value={email} onChange={e=>setEmail(e.target.value)} required disabled={busy} autoComplete="off" placeholder="Enter your email" /></div>}
-        <div className="form-group"><label htmlFor="student-pin" className="form-label">{kind==='student'?'Student PIN':registerMode?'Set PIN':'Guest PIN'}</label>
-          <div className="welcome-pin-field"><input id="student-pin" className="text-input player-name-input" type={showPin?"text":"password"} inputMode="numeric" pattern="[0-9]{6}" maxLength={6} value={pin} onChange={e => setPin(e.target.value.replace(/\D/g, ''))} required disabled={busy} placeholder={kind==='student'?'6-digit PIN from your teacher':registerMode?'Create a 6-digit PIN':'Your 6-digit PIN'} autoComplete="off" data-lpignore="true" data-1p-ignore="true" />
+        {kind === 'student' && <div className="form-group"><label htmlFor="student-pin" className="form-label">Student PIN</label>
+          <div className="welcome-pin-field"><input id="student-pin" className="text-input player-name-input" type={showPin?"text":"password"} inputMode="numeric" pattern="[0-9]{6}" maxLength={6} value={pin} onChange={e => setPin(e.target.value.replace(/\D/g, ''))} required disabled={busy} placeholder="6-digit PIN from your teacher" autoComplete="off" data-lpignore="true" data-1p-ignore="true" />
           <button type="button" className="welcome-pin-toggle" onClick={()=>setShowPin(v=>!v)} aria-label={showPin?'Hide PIN':'Show PIN'} aria-pressed={showPin} title={showPin?'Hide PIN':'Show PIN'}>{showPin?<EyeOff size={20}/>:<Eye size={20}/>}</button></div>
-          <p className="form-hint">Use your registered name and six-digit PIN. Keep your PIN private.</p></div>
-        <p className="form-hint">{kind === 'guest' ? 'Register once with full name, email and PIN. Then log in with the same name and PIN. Names remain masked on the leaderboard.' : 'Your full registered name is shown publicly and your scores stay linked to your student profile.'}</p>
-        {notice&&<div className="form-hint" role="status">{notice}</div>}
+          <p className="form-hint">Use your registered name and six-digit PIN. Keep your PIN private.</p></div>}
+        <p className="form-hint">{kind === 'guest' ? 'Enter your name and play. No PIN or registration needed. Each guest login starts a new profile; names remain masked on the leaderboard.' : 'Your full registered name is shown publicly and your scores stay linked to your student profile.'}</p>
         {error && <div className="form-error-msg" role="alert">{error}</div>}
-        {kind==='guest'&&!registerMode ? <div className="welcome-guest-actions">
-          <button type="submit" className="btn btn-primary btn-welcome-start" disabled={busy}><Play size={18}/><span>{busy?'Checking…':'Login'}</span></button>
-          <button type="button" className="btn btn-primary btn-welcome-start" disabled={busy} onClick={()=>{setRegisterMode(true);setError('');setNotice('');setPin('');}}>Register</button>
-        </div> : <button type="submit" className="btn btn-primary btn-welcome-start" disabled={busy}><Play size={18}/><span>{busy?'Checking…':kind==='guest'?'Register':'Log in & Play'}</span></button>}
+        <button type="submit" className="btn btn-primary btn-welcome-start" disabled={busy}><Play size={18}/><span>{busy ? 'Checking…' : kind === 'guest' ? 'Play as Guest' : 'Log in & Play'}</span></button>
       </form>}
-      <button type="button" className="btn btn-primary btn-welcome-start" style={{width:'100%',marginTop:16,justifyContent:'center'}} disabled={busy} onClick={onPlayNow}><Play size={18}/><span>Play Now — No Login Required</span></button>
-      <p className="form-hint" style={{textAlign:'center'}}>Instant practice only. Scores are not added to the leaderboard.</p>
-      <div className="welcome-admin-link"><a href="/admin">Admin login</a></div>
     </div>
   </div>;
 };
