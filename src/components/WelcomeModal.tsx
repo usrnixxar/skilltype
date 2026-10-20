@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { PlayerProfile, validatePlayerName } from '../utils/playerProfile';
-import { loginPlayer, SessionConflictError } from '../utils/playerSession';
+import { loginPlayer, SessionConflictError, signInWithGoogle, completeGoogleLogin } from '../utils/playerSession';
 import { GraduationCap, User, Eye, EyeOff, Crown, Zap, Trophy, Gift, Keyboard, ShieldCheck, ArrowRight, Volume2, VolumeX } from 'lucide-react';
 interface WelcomeModalProps {
   isOpen: boolean;
@@ -29,7 +29,25 @@ export const WelcomeModal: React.FC<WelcomeModalProps> = ({ isOpen, activePlayer
   const [showPin,setShowPin]=useState(false);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [googleBusy, setGoogleBusy] = useState(false);
   useEffect(() => { if (isOpen) { setKind('student'); setName(''); setPin('');setShowPin(false); setError(''); } }, [isOpen]);
+  useEffect(() => {
+    if (!visible) return;
+    let cancelled = false;
+    const finishGoogle = async () => {
+      try {
+        const profile = await completeGoogleLogin();
+        if (profile && !cancelled) onSavePlayerAndStart(profile);
+      } catch (err) {
+        if (cancelled) return;
+        if (err instanceof SessionConflictError) {
+          setError('Google account active on another device. Sign out there before trying again.');
+        } else setError(err instanceof Error ? err.message : 'Google login failed');
+      }
+    };
+    void finishGoogle();
+    return () => { cancelled = true; };
+  }, [visible]);
   if (!isOpen || activePlayer) return null;
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -122,6 +140,12 @@ export const WelcomeModal: React.FC<WelcomeModalProps> = ({ isOpen, activePlayer
               {error && <div className="form-error-msg" role="alert">{error}</div>}
               <button type="submit" className="btn btn-primary btn-welcome-start" disabled={busy}><Crown size={20}/><span>{busy ? 'Checking…' : kind === 'guest' ? 'Play as Guest' : 'Login & Play'}</span><ArrowRight size={20}/></button>
             </form>
+            <div className="landing-google-separator"><span>OR</span></div>
+            <button type="button" className="landing-google-button" disabled={busy || googleBusy} onClick={async () => {
+              setGoogleBusy(true); setError('');
+              try { await signInWithGoogle(); }
+              catch (err) { setError(err instanceof Error ? err.message : 'Google login unavailable'); setGoogleBusy(false); }
+            }}><span className="landing-google-g" aria-hidden="true">G</span>{googleBusy ? 'Opening Google…' : 'Continue with Google'}</button>
             <div className="landing-switch">{kind === 'student' ? 'New here?' : 'Already a student?'} <button type="button" disabled={busy} onClick={() => {setKind(kind === 'student' ? 'guest' : 'student');setPin('');setError('');}}>{kind === 'student' ? 'Continue as Guest' : 'Student Login'} <ArrowRight size={14}/></button></div>
             <div className="landing-secure"><ShieldCheck size={15}/> Fast login • Secure access • Start playing instantly</div>
           </div>
