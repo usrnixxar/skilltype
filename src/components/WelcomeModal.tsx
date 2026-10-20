@@ -81,7 +81,7 @@ export const WelcomeModal: React.FC<WelcomeModalProps> = ({ isOpen, activePlayer
     <div className="landing-shell">
       <header className="landing-navbar">
         <button type="button" className="landing-sound-toggle" onClick={onToggleMute} aria-label={isMuted ? "Unmute sound" : "Mute sound"} aria-pressed={isMuted} title={isMuted ? "Unmute sound" : "Mute sound"}>{isMuted ? <VolumeX size={20}/> : <Volume2 size={20}/>}<span>{isMuted ? "Sound Off" : "Sound On"}</span></button>
-        <div className="landing-logo"><img src="/skillence-logo-transparent.png" alt="Skillence Academy" className="landing-brand-image"/><span className="landing-powered-name">SkillType</span></div>
+        <div className="landing-logo"><img src="/skillence-logo-new.png" alt="Skillence Academy" className="landing-brand-image"/><span className="landing-powered-name">SkillType</span></div>
         <span className="landing-navbar-caption">TYPE • PRACTICE • COMPETE • EARN</span>
         <span className="landing-nav-pill"><Keyboard size={18}/> PLAY <span>•</span> PRACTICE <span>•</span> EARN</span>
       </header>
