@@ -3390,6 +3390,9 @@ body:has(.admin-image-modal[open]) { overflow: hidden; }
 .leaderboard-winner-card{min-width:0;border:1px solid #c89d4b66;border-radius:12px;padding:10px 8px;background:linear-gradient(135deg,#182236,#102030);display:flex;flex-direction:column;justify-content:center;align-items:center;gap:8px;text-align:center}
 .leaderboard-winner-card .stat-card-label{font-size:9px;letter-spacing:.04em}
 .leaderboard-winner-card .last-week-winner-name{font-size:13px;color:#ffd166;line-height:1.35;overflow-wrap:anywhere}
+.last-week-winner-title{display:flex;align-items:center;justify-content:center;gap:clamp(6px,1vw,10px);width:100%;min-width:0}
+.last-week-winner-title .last-week-winner-name{min-width:0;flex:0 1 auto}
+.last-week-winner-trophy{flex:0 0 auto;font-size:clamp(18px,1.6vw,24px);line-height:1}
 .leaderboard-winner-card small{font-size:9px;line-height:1.4;color:#96a8c2}
 .weekly-leaderboard-panel .gift-showcase{box-sizing:border-box;width:94%;align-self:center;margin:0 0 8px;padding:9px 11px;border-radius:11px}
 .weekly-leaderboard-panel .gift-image-stage{height:100px;margin:5px 0}
