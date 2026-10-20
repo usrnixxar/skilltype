@@ -3806,6 +3806,3 @@ body:has(.admin-image-modal[open]) { overflow: hidden; }
 .skilltype-landing .landing-brand-image {background:transparent;border-radius:0;object-fit:contain}
 
 
-/* Header wordmark in Skillence Academy brand colors. */
-.skilltype-landing .landing-logo .landing-word-skill {color:#fff}
-.skilltype-landing .landing-logo .landing-word-type {color:#f58220}
