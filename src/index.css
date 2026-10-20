@@ -3789,3 +3789,9 @@ body:has(.admin-image-modal[open]) { overflow: hidden; }
   .skilltype-landing .landing-login-area {max-height:100%;overflow-y:auto;scrollbar-width:none}
   .skilltype-landing .landing-login-area::-webkit-scrollbar {display:none}
 }
+
+/* Persistent sound control at top-left of the login homepage. */
+.skilltype-landing .landing-navbar {position:relative;padding-left:clamp(76px,9vw,150px)}
+.skilltype-landing .landing-sound-toggle {position:absolute;left:clamp(12px,2vw,28px);top:50%;transform:translateY(-50%);display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:9px 11px;border:1px solid #168bc3;border-radius:10px;background:#081d35d9;color:#b6e7ff;font:inherit;font-size:11px;font-weight:800;white-space:nowrap;cursor:pointer;z-index:2}
+.skilltype-landing .landing-sound-toggle:hover,.skilltype-landing .landing-sound-toggle:focus-visible {border-color:#36d9ff;color:#fff;box-shadow:0 0 15px #00aeff55;outline-offset:2px}
+@media(max-width:750px){.skilltype-landing .landing-navbar{padding-left:65px}.skilltype-landing .landing-sound-toggle{left:12px;padding:8px}.skilltype-landing .landing-sound-toggle span{display:none}.skilltype-landing .landing-logo{font-size:clamp(20px,5vw,26px)}.skilltype-landing .landing-logo svg{width:25px}}
