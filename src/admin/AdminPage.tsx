@@ -131,8 +131,8 @@ export default function AdminPage() {
     finally { setBusy(false); }
   };
   return <main className="admin-root"><div className="admin-shell">
-    <header className="admin-header"><a className="admin-brand" href="/"><img src="/skillence-logo.jpg" alt="Skillence Academy" /><span>SkillType<small>ADMIN CONSOLE</small></span></a>
-      <div className="admin-actions"><a className="admin-button" href="/"><ArrowLeft size={16} /> Back to game</a>{profile && <button className="admin-button" disabled={busy} onClick={() => void logout()}><LogOut size={16} /> Log out</button>}</div></header>
+    <header className="admin-header"><a className="admin-brand" href="https://skilltype.vercel.app/"><img src="/skillence-logo.jpg" alt="Skillence Academy" /><span>SkillType<small>ADMIN CONSOLE</small></span></a>
+      <div className="admin-actions"><a className="admin-button" href="https://skilltype.vercel.app/"><ArrowLeft size={16} /> Back to game</a>{profile && <button className="admin-button" disabled={busy} onClick={() => void logout()}><LogOut size={16} /> Log out</button>}</div></header>
     {error && <div className="admin-alert" role="alert">{error}</div>}
     {notice && <div className="admin-notice" role="status">{notice}</div>}
     {!authorized ? <section className="admin-login admin-surface"><ShieldCheck size={36} className="admin-accent" /><h1>Admin login</h1><p>Manage players and gifts for SkillType.</p>
