@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { PlayerProfile, validatePlayerName } from '../utils/playerProfile';
 import { loginPlayer, SessionConflictError } from '../utils/playerSession';
-import { GraduationCap, User, Play, Eye, EyeOff, Crown, Zap, Trophy, Gift, Keyboard, ShieldCheck, ArrowRight } from 'lucide-react';
+import { GraduationCap, User, Eye, EyeOff, Crown, Zap, Trophy, Gift, Keyboard, ShieldCheck, ArrowRight } from 'lucide-react';
 interface WelcomeModalProps {
   isOpen: boolean;
   activePlayer: PlayerProfile | null;
