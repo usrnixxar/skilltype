@@ -3660,3 +3660,60 @@ body:has(.admin-image-modal[open]) { overflow: hidden; }
   font-size: clamp(12px, 1.35vw, 15px);
   line-height: 1.35;
 }
+
+/* SkillType login landing page – self-contained to avoid changing gameplay UI. */
+.welcome-screen.skilltype-landing {display:block; padding:0; overflow-y:auto; overflow-x:hidden; background:radial-gradient(ellipse at 42% 38%,#0c2a56 0%,#06152e 45%,#020916 100%); color:#eff8ff; }
+.skilltype-landing .landing-stars {position:fixed;inset:0;pointer-events:none;background-image:radial-gradient(1px 1px at 12% 19%,#9ddaff 98%,transparent),radial-gradient(1px 1px at 64% 32%,#d5f7ff 98%,transparent),radial-gradient(2px 2px at 84% 15%,#5abfff 98%,transparent),radial-gradient(1px 1px at 33% 68%,#95c9ef 98%,transparent),radial-gradient(1px 1px at 73% 79%,#ffffff 98%,transparent);background-size:287px 239px;opacity:.45}
+.skilltype-landing .landing-shell {position:relative;max-width:1660px;min-height:100dvh;margin:0 auto;display:flex;flex-direction:column;isolation:isolate}
+.skilltype-landing .landing-navbar {display:flex;align-items:center;justify-content:space-between;gap:24px;padding:17px clamp(20px,4vw,64px);border-bottom:1px solid #1884c448;background:#020d2080}
+.skilltype-landing .landing-logo {display:flex;align-items:center;gap:10px;color:#ffd166;font-weight:900;font-size:clamp(22px,2vw,29px);font-style:italic;letter-spacing:-1px}
+.skilltype-landing .landing-logo span {color:#f4f8ff}.skilltype-landing .landing-logo strong {color:#0fbeff}
+.skilltype-landing .landing-navbar-caption {font-size:12px;color:#b0d6ee;letter-spacing:3px}
+.skilltype-landing .landing-nav-pill {display:flex;align-items:center;gap:11px;padding:10px 17px;border:1px solid #079bea;border-radius:12px;color:#33caff;font-weight:800;white-space:nowrap;background:#04182d}
+.skilltype-landing .landing-nav-pill span {color:#ffce6a}
+.skilltype-landing .landing-main {display:grid;grid-template-columns:minmax(0,1.25fr) minmax(360px,.82fr);gap:clamp(22px,4vw,80px);align-items:center;flex:1;padding:clamp(24px,4vw,58px) clamp(20px,4vw,64px) 28px}
+.skilltype-landing .landing-hero {position:relative;align-self:stretch;display:flex;flex-direction:column;justify-content:center;min-width:0;padding-bottom:125px}
+.skilltype-landing .landing-eyebrow {width:max-content;max-width:100%;font-size:clamp(9px,1vw,12px);font-weight:700;letter-spacing:3px;border:1px solid #148fd4;border-radius:20px;padding:7px 13px;color:#a9dfff;background:#061d37b0}
+.skilltype-landing .landing-heading {display:flex;align-items:center;gap:12px;margin:26px 0 9px;font-size:clamp(58px,6vw,105px);line-height:1.06;letter-spacing:-5px;font-style:italic;font-weight:950;text-shadow:0 0 25px #9be5ff55}
+.skilltype-landing .landing-heading span {color:#15c0ff;text-shadow:0 0 30px #06aaff77}
+.skilltype-landing .landing-heading-crown {color:#ffd166;fill:#ffd166;flex-shrink:0;width:clamp(40px,5vw,72px);height:clamp(40px,5vw,72px);filter:drop-shadow(0 0 12px #eeb84b88)}
+.skilltype-landing .landing-tagline {font-size:clamp(20px,2.5vw,34px);font-weight:850;line-height:1.2;letter-spacing:-.7px}
+.skilltype-landing .landing-tagline em {font-style:normal;color:#ffd166}
+.skilltype-landing .landing-description {max-width:590px;margin:18px 0 23px;font-size:clamp(14px,1.2vw,18px);line-height:1.65;color:#b8cbe4}
+.skilltype-landing .landing-benefits {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;max-width:660px}
+.skilltype-landing .landing-benefit {display:flex;align-items:center;gap:9px;padding:14px 10px;border:1px solid #0785d7a6;border-radius:13px;background:linear-gradient(135deg,#07345b9a,#061329cc);box-shadow:0 0 23px #039beb14;color:#24d5ff;min-width:0}
+.skilltype-landing .landing-benefit svg {flex-shrink:0}.skilltype-landing .landing-benefit strong {display:block;font-size:clamp(11px,1vw,14px);line-height:1.2}.skilltype-landing .landing-benefit small {display:block;margin-top:6px;font-size:clamp(9px,.85vw,11px);line-height:1.3;color:#c3d0e5}
+.skilltype-landing .landing-benefit-gold {color:#ffd166;border-color:#c4914177}
+.skilltype-landing .landing-illustration {position:absolute;z-index:-1;inset:auto -5% -40px 5%;height:250px;pointer-events:none;opacity:.88}
+.skilltype-landing .landing-orbit {position:absolute;left:15%;bottom:-130px;width:80%;height:350px;transform:rotate(-15deg);border-top:2px solid #1b9feb66;border-radius:50%;box-shadow:0 -18px 85px #0067ef2e}
+.skilltype-landing .landing-orbit-two {transform:rotate(18deg);border-color:#d8a64255;left:28%}
+.skilltype-landing .landing-key {position:absolute;width:52px;height:52px;display:grid;place-items:center;transform:rotate(-13deg);border:2px solid #16bbff;border-radius:9px;background:linear-gradient(140deg,#0371cb88,#071939);font-size:28px;font-weight:900;color:#c6f7ff;box-shadow:0 0 26px #028cffaa}
+.skilltype-landing .key-one {left:15%;top:25%}.skilltype-landing .key-two {left:35%;top:5%;transform:rotate(16deg)}.skilltype-landing .key-three {left:64%;top:32%;transform:rotate(12deg)}.skilltype-landing .key-four {left:83%;top:3%}
+.skilltype-landing .landing-keyboard-glow {position:absolute;bottom:-18px;left:38%;color:#058ffb99;filter:drop-shadow(0 0 27px #00a9ff)}
+.skilltype-landing .landing-login-area {min-width:0;display:flex;flex-direction:column;gap:16px}
+.skilltype-landing .landing-login-panel {width:100%;max-width:none;margin:0;padding:clamp(20px,2.7vw,38px);border:1px solid #0baee9;border-radius:18px;background:linear-gradient(145deg,#0a2546f0,#051225f5 66%,#07172df9);box-shadow:0 0 0 5px #008ce50a,0 12px 48px #0009,inset 0 0 35px #005c9920;text-align:left}
+.skilltype-landing .landing-panel-head {display:flex;align-items:center;gap:12px;margin-bottom:20px}
+.skilltype-landing .landing-panel-icon {display:grid;place-items:center;width:40px;height:40px;color:#ffd166;border-radius:12px;background:#bd853322}
+.skilltype-landing .landing-panel-head strong {display:block;letter-spacing:1.5px;font-size:14px}.skilltype-landing .landing-panel-head small {color:#a3bad5}
+.skilltype-landing .login-choices {display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0 0 25px}
+.skilltype-landing .login-choice {width:100%;display:flex;flex-direction:row;align-items:center;justify-content:center;gap:9px;min-height:56px;padding:10px 8px;background:#071a31;border:1px solid #244367;border-radius:10px;color:#b4cae6;transform:none}
+.skilltype-landing .login-choice.selected {background:linear-gradient(110deg,#0475da,#003eab);color:#fff;border-color:#00d8ff;box-shadow:0 0 22px #008ef777}
+.skilltype-landing .login-choice strong {font-size:clamp(12px,1.1vw,15px)}
+.skilltype-landing .welcome-form {gap:16px}
+.skilltype-landing .form-label {display:flex;align-items:center;gap:8px;margin-bottom:8px;color:#d9ecff;font-size:13px;font-weight:700}
+.skilltype-landing .player-name-input {width:100%;height:52px;background:#10213e;border:1px solid #335778;border-radius:9px;color:#fff;font-size:15px;padding:12px 15px;user-select:text;-webkit-user-select:text}
+.skilltype-landing .player-name-input:focus {border-color:#11c7ff;outline:2px solid #15bfff44}
+.skilltype-landing .landing-form-note {font-size:11px;color:#aabbd4;line-height:1.5}
+.skilltype-landing .btn-welcome-start {display:flex;align-items:center;justify-content:center;gap:13px;min-height:64px;border:1px solid #54dfff;border-radius:11px;background:linear-gradient(110deg,#04c8ff,#0061ce 68%,#f7ba43);box-shadow:0 0 25px #039ffd70;font-size:19px;font-weight:850}
+.skilltype-landing .btn-welcome-start svg:first-child {color:#ffdf7e}.skilltype-landing .landing-switch {display:flex;align-items:center;justify-content:center;gap:6px;margin-top:16px;color:#a9bfd6;font-size:12px}
+.skilltype-landing .landing-switch button {display:inline-flex;align-items:center;gap:4px;border:0;background:none;color:#33d5ff;cursor:pointer;font:inherit;font-weight:750}
+.skilltype-landing .landing-secure {display:flex;align-items:center;justify-content:center;gap:8px;margin-top:20px;color:#9bb0cd;font-size:11px;text-align:center}
+.skilltype-landing .landing-preview {padding:19px 23px;border:1px solid #167eb2;border-radius:14px;background:linear-gradient(115deg,#0a2037ed,#051325ed)}
+.skilltype-landing .landing-preview-head {display:flex;align-items:center;gap:9px;color:#f7ce70;font-size:14px}
+.skilltype-landing .landing-preview-features {display:flex;flex-wrap:wrap;gap:9px;margin:14px 0}
+.skilltype-landing .landing-preview-features span {border-radius:6px;background:#0a3c6599;padding:7px 10px;color:#6fd9ff;font-size:10px;font-weight:800;letter-spacing:.5px}
+.skilltype-landing .landing-preview p {color:#abbfd9;font-size:12px}
+.skilltype-landing .landing-footer {display:flex;justify-content:space-between;gap:12px;padding:13px clamp(20px,4vw,64px);border-top:1px solid #1386c438;color:#709bbb;letter-spacing:1.3px;font-size:10px}
+@media(max-width:980px) {.skilltype-landing .landing-navbar-caption{display:none}.skilltype-landing .landing-main{grid-template-columns:1fr;gap:24px;align-items:start}.skilltype-landing .landing-hero{padding-bottom:0}.skilltype-landing .landing-illustration{display:none}.skilltype-landing .landing-heading{margin-top:16px}.skilltype-landing .landing-login-area{max-width:680px;width:100%;margin:0 auto}.skilltype-landing .landing-description{margin:12px 0 20px}}
+@media(max-width:560px) {.skilltype-landing .landing-navbar{padding:14px 16px}.skilltype-landing .landing-nav-pill{font-size:0;padding:8px 10px;gap:0}.skilltype-landing .landing-nav-pill svg{width:24px;height:24px}.skilltype-landing .landing-nav-pill span{display:none}.skilltype-landing .landing-main{padding:24px 14px;gap:24px}.skilltype-landing .landing-heading{font-size:clamp(45px,11vw,65px);letter-spacing:-3px}.skilltype-landing .landing-tagline{font-size:20px}.skilltype-landing .landing-benefits{gap:6px}.skilltype-landing .landing-benefit{display:flex;flex-direction:column;align-items:flex-start;padding:10px 7px}.skilltype-landing .landing-benefit svg{width:20px;height:20px}.skilltype-landing .landing-benefit strong{font-size:10px}.skilltype-landing .landing-benefit small{font-size:9px}.skilltype-landing .landing-login-panel{padding:18px 15px}.skilltype-landing .login-choice{gap:6px;min-height:54px}.skilltype-landing .login-choice svg{width:18px}.skilltype-landing .landing-footer{font-size:9px;padding:13px 15px}.skilltype-landing .landing-preview{padding:14px}}
+@media(prefers-reduced-motion:reduce){.skilltype-landing *, .skilltype-landing *::before,.skilltype-landing *::after{animation:none!important;transition:none!important}}
