@@ -57,6 +57,49 @@ Deno.serve(async (req: Request) => {
       { auth: { persistSession: false } }
     );
 
+    if (body.action === 'google-login') {
+      if (typeof body.accessToken !== 'string' || body.accessToken.length < 50 ||
+          typeof body.deviceId !== 'string' || !/^[a-f0-9-]{20,80}$/.test(body.deviceId)) {
+        return reply({ error: 'Invalid Google sign-in request' }, 400);
+      }
+      // Verify Google's identity through Supabase Auth; never trust a name or email sent by the client.
+      const { data: verified, error: authError } = await admin.auth.getUser(body.accessToken);
+      const googleUser = verified?.user;
+      if (authError || !googleUser || !googleUser.identities?.some(identity => identity.provider === 'google')) {
+        return reply({ error: 'Google authentication failed. Please try again.' }, 401);
+      }
+      const rawName = String(googleUser.user_metadata?.full_name || googleUser.user_metadata?.name || 'Google Player');
+      const cleanName = rawName.replace(/<[^>]*>?/g, '').replace(/[\x00-\x1f\x7f]/g, '').trim().replace(/\s+/g, ' ').slice(0, 25) || 'Google Player';
+      const { data: account, error: accountError } = await admin.from('google_player_accounts').select('player_id').eq('google_user_id', googleUser.id).maybeSingle();
+      if (accountError) return reply({ error: 'Google player lookup unavailable' }, 503);
+      let playerId = account?.player_id as string | undefined;
+      if (!playerId) {
+        const { data: created, error: creationError } = await admin.from('player_profiles').insert({name: cleanName, kind: 'guest'}).select('id').single();
+        if (creationError || !created) return reply({ error: 'Unable to create Google player profile' }, 503);
+        const { error: mappingError } = await admin.from('google_player_accounts').insert({google_user_id:googleUser.id,player_id:created.id});
+        if (mappingError) {
+          await admin.from('player_profiles').delete().eq('id',created.id);
+          const {data: raced} = await admin.from('google_player_accounts').select('player_id').eq('google_user_id',googleUser.id).maybeSingle();
+          if (!raced) return reply({error:'Google profile setup failed. Please retry.'},503);
+          playerId = raced.player_id;
+        } else playerId = created.id;
+      }
+      const { data: existingSessions, error: sessionsError } = await admin.from('player_sessions').select('device_id').eq('player_id',playerId).gt('expires_at',new Date().toISOString());
+      if (sessionsError) return reply({error:'Session unavailable'},503);
+      if (existingSessions?.some(row => row.device_id !== body.deviceId) && body.forceLogoutOther !== true) {
+        return reply({error:'This Google account is active on another device.',code:'ACTIVE_ON_OTHER_DEVICE'},409);
+      }
+      const {error:deleteError} = await admin.from('player_sessions').delete().eq('player_id',playerId);
+      if(deleteError)return reply({error:'Unable to replace Google session'},503);
+      const token = Array.from(crypto.getRandomValues(new Uint8Array(32)),b=>b.toString(16).padStart(2,'0')).join('');
+      const {error:sessionError}=await admin.from('player_sessions').insert({player_id:playerId,token_hash:await hash(token),device_id:body.deviceId,last_seen_at:new Date().toISOString()});
+      if(sessionError)return reply({error:'Unable to start Google session'},503);
+      await admin.from('player_profiles').update({last_active_at:new Date().toISOString()}).eq('id',playerId);
+      await admin.from('player_login_events').insert({player_id:playerId});
+      const {data:profile}=await admin.from('player_profiles').select('id,name,created_at').eq('id',playerId).single();
+      return reply({success:true,profile:{id:playerId,name:maskGuestName(profile?.name||cleanName),kind:'guest',createdAt:Date.parse(profile?.created_at||new Date().toISOString()),sessionToken:token}});
+    }
+
     if(body.action==='register-guest'||(body.action==='login'&&body.kind==='guest')){
       const name=typeof body.name==='string'?body.name.trim().replace(/\s+/g,' '):'';
       const pin=body.pin;
