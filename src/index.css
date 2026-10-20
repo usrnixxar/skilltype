@@ -3629,3 +3629,34 @@ body:has(.admin-image-modal[open]) { overflow: hidden; }
  }
  .weekly-leaderboard-panel .col-status { font-size:9px; }
 }
+
+/* Keep the last week's winner trophies flanking the name on all screen sizes. */
+.weekly-leaderboard-panel .leaderboard-winner-card .last-week-winner-title {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(5px, 1.4vw, 12px);
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+.weekly-leaderboard-panel .leaderboard-winner-card .last-week-winner-title .last-week-winner-trophy {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  font-size: clamp(16px, 2vw, 23px);
+  line-height: 1;
+}
+.weekly-leaderboard-panel .leaderboard-winner-card .last-week-winner-title .last-week-winner-name {
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: calc(100% - 56px);
+  margin: 0;
+  text-align: center;
+  overflow-wrap: anywhere;
+  font-size: clamp(12px, 1.35vw, 15px);
+  line-height: 1.35;
+}
